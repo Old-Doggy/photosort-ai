@@ -2,7 +2,7 @@ import http from 'node:http'
 import path from 'node:path'
 import os from 'node:os'
 import { randomBytes, createHash } from 'node:crypto'
-import { readFile, writeFile, mkdir, stat, lstat, unlink } from 'node:fs/promises'
+import { readFile, mkdir, stat, lstat, unlink, rename } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import sharp from 'sharp'
@@ -16,6 +16,7 @@ import { createMusiqAestheticScorer } from './musiq-aesthetic-scorer.js'
 import { modelProfiles } from './model-resource-policy.js'
 import { inspectModelOptions } from './model-resources.js'
 import { scoreCurationBatch } from './curation-scoring.js'
+import { writeAtomicJson } from './atomic-state.js'
 
 const execute = promisify(execFile)
 
@@ -50,13 +51,19 @@ export async function createControlServer({ root, controlDir = path.join(root, '
   const configFile = path.join(controlDir, 'config.json')
   try {
     const saved = JSON.parse(await readFile(configFile, 'utf8'))
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new SyntaxError('Invalid config object')
     const backend = devices.some(device => device.id === saved.backend) ? saved.backend : defaultBackend
     const inputBroken = typeof saved.input !== 'string' || saved.input.includes('\ufffd')
     const outputBroken = typeof saved.output !== 'string' || saved.output.includes('\ufffd')
     const model = saved.model === 'auto' || modelProfiles().some(item => item.id === saved.model) ? saved.model : 'auto'
     config = { input: inputBroken ? config.input : path.resolve(saved.input), output: outputBroken ? config.output : path.resolve(saved.output), backend, model, forceModel: saved.forceModel === true }
     if (inputBroken || outputBroken) configWarning = '检测到旧配置中的路径编码损坏，已恢复默认目录；请重新选择文件夹。'
-  } catch (error) { if (error.code !== 'ENOENT') throw error }
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      await rename(configFile, configFile + '.corrupt-' + randomBytes(8).toString('hex'))
+      configWarning = '配置文件损坏，已保留备份并恢复默认目录；请重新选择文件夹'
+    } else if (error.code !== 'ENOENT') throw error
+  }
   const stateDir = () => path.join(controlDir, createHash('sha256').update(config.input + '\n' + config.output).digest('hex').slice(0, 24))
   let phase = 'stopped'
   let errorMessage = null
@@ -67,6 +74,7 @@ export async function createControlServer({ root, controlDir = path.join(root, '
   let stopping
   let sorter
   let curating = false
+  let mutating = false
   let aestheticScorer
   let musiqScorer
   let curation = { phase: 'idle', sources: [], warnings: [], considered: 0, selected: 0 }
@@ -166,6 +174,7 @@ export async function createControlServer({ root, controlDir = path.join(root, '
   let origin
   const json = (response, status, body) => { response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); response.end(JSON.stringify(body)) }
   server.on('request', async (request, response) => {
+    let ownsMutation = false
     try {
       const route = new URL(request.url, origin).pathname
       if (request.headers.host !== new URL(origin).host || (request.headers.origin && request.headers.origin !== origin)) { json(response, 403, { error: 'Local same-origin requests only' }); return }
@@ -180,6 +189,9 @@ export async function createControlServer({ root, controlDir = path.join(root, '
       }
       if (request.method === 'POST' && route.startsWith('/api/')) {
         if (request.headers['x-lenssort-token'] !== token || request.headers['content-type'] !== 'application/json') { json(response, 403, { error: 'Invalid control token' }); return }
+        if (mutating) { json(response, 409, { error: '另一项操作正在保存，请稍后重试' }); return }
+        mutating = true
+        ownsMutation = true
         let body = ''
         for await (const chunk of request) { body += chunk; if (body.length > 16384) throw Object.assign(new Error('Request too large'), { status: 413 }) }
         let payload
@@ -199,13 +211,14 @@ export async function createControlServer({ root, controlDir = path.join(root, '
           const reverse = path.relative(next.output, next.input)
           const nested = value => !value || (!value.startsWith('..' + path.sep) && value !== '..' && !path.isAbsolute(value))
           if (nested(relative) || nested(reverse)) throw Object.assign(new Error('Input and output folders must not overlap'), { status: 400 })
-          await writeFile(configFile, JSON.stringify(next, null, 2))
+          await writeAtomicJson(configFile, next)
           config = next
           configWarning = null
           await loadCuratedIds()
         } else if (route === '/api/start') await start()
         else if (route === '/api/stop') await stop()
         else if (route === '/api/delete-output') {
+          if (curating) throw Object.assign(new Error('正在生成辅助推荐，请稍后修改照片'), { status: 409 })
           if (payload.confirm !== true || typeof payload.id !== 'string') throw Object.assign(new Error('请确认删除输出副本'), { status: 400 })
           const record = (await records()).find(item => item.id === payload.id)
           if (!record?.source) throw Object.assign(new Error('找不到可删除的输出副本'), { status: 404 })
@@ -213,6 +226,7 @@ export async function createControlServer({ root, controlDir = path.join(root, '
           else await deleteFolderOutput({ stateDir: stateDir(), output: config.output, source: record.source })
           json(response, 200, { phase, config, deleted: true, originalPreserved: true }); return
         } else if (route === '/api/update-category') {
+          if (curating) throw Object.assign(new Error('正在生成辅助推荐，请稍后修改照片'), { status: 409 })
           if (payload.confirm !== true || typeof payload.id !== 'string' || typeof payload.category !== 'string') throw Object.assign(new Error('请确认新的分类标签'), { status: 400 })
           const record = (await records()).find(item => item.id === payload.id)
           if (!record?.source) throw Object.assign(new Error('找不到可修改分类的照片'), { status: 404 })
@@ -327,6 +341,7 @@ export async function createControlServer({ root, controlDir = path.join(root, '
       }
       json(response, 404, { error: 'Not found' })
     } catch (error) { json(response, error.status ?? 500, { error: error.message }) }
+    finally { if (ownsMutation) mutating = false }
   })
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve) })
   origin = 'http://127.0.0.1:' + server.address().port

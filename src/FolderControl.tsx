@@ -64,6 +64,8 @@ export default function FolderControl() {
     statusAbortRef.current?.abort()
     const controller = new AbortController()
     statusAbortRef.current = controller
+    let timedOut = false
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort() }, 15000)
     try {
       const response = await fetch('/api/status', { cache: 'no-store', signal: controller.signal })
       if (!response.ok) throw new Error('本地服务尚未启动：请使用“启动网页控制.cmd”')
@@ -79,10 +81,11 @@ export default function FolderControl() {
       setError('')
       return next
     } catch (caught) {
+      if (timedOut) { setError('本地服务响应超时，正在重试；请检查启动窗口'); return null }
       if (controller.signal.aborted || requestId !== statusRequestRef.current) return null
       setError(caught instanceof Error ? caught.message : '无法连接本地服务')
       return null
-    }
+    } finally { window.clearTimeout(timeout) }
   }
   useEffect(() => {
     let active = true
@@ -103,10 +106,15 @@ export default function FolderControl() {
   }, [])
   const control = async (route: string, body = {}) => {
     if (!status) throw new Error('服务未连接')
-    const response = await fetch(route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': status.token }, body: JSON.stringify(body) })
-    const result = await response.json()
-    if (!response.ok) throw new Error(result.error ?? '操作失败')
-    return result
+    try {
+      const response = await fetch(route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': status.token }, body: JSON.stringify(body), signal: AbortSignal.timeout(300000) })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error ?? '操作失败')
+      return result
+    } catch (caught) {
+      if (caught instanceof Error && caught.name === 'TimeoutError') throw new Error('操作等待超时，后台可能仍在处理；请刷新确认结果后再重试')
+      throw caught
+    }
   }
   const operate = async (start: boolean) => {
     if (!config || busy || curating) return

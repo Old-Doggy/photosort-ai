@@ -186,9 +186,16 @@ export async function createFolderSorter(options) {
   try { lock = await open(lockPath, 'wx') }
   catch (error) {
     if (error.code !== 'EEXIST') throw error
-    const old = JSON.parse(await readFile(lockPath, 'utf8'))
-    try { process.kill(old.pid, 0); throw new Error('Service already running (lock)') }
-    catch (probe) { if (probe.code !== 'ESRCH') throw probe }
+    let old
+    try { old = JSON.parse(await readFile(lockPath, 'utf8')) }
+    catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      if (Date.now() - (await lstat(lockPath)).mtimeMs < 10000) throw new Error('Service lock is being initialized; retry shortly')
+    }
+    if (old && Number.isInteger(old.pid) && old.pid > 0) {
+      try { process.kill(old.pid, 0); throw new Error('Service already running (lock)') }
+      catch (probe) { if (probe.code !== 'ESRCH') throw probe }
+    } else if (old) throw new Error('Invalid service lock; inspect it before restarting')
     await unlink(lockPath)
     lock = await open(lockPath, 'wx')
   }
@@ -361,8 +368,15 @@ export async function createFolderSorter(options) {
       notify(batchResult)
     } else notify({ type: 'progress', phase: pending ? 'waiting' : 'idle', completed, total: files.length, pending, currentFile: null, message: pending ? `等待 ${pending} 张照片写入完成…` : files.length ? `本轮处理完成：${completed}/${files.length} 张` : '正在等待新照片…' })
   }
+  let mutating = false
+  const exclusive = async action => {
+    if (mutating) throw Object.assign(new Error('正在保存照片修改，请稍后重试'), { status: 409 })
+    mutating = true
+    try { if (running) await running; return await action() }
+    finally { mutating = false }
+  }
   const tick = () => {
-    if (stopped || running) return
+    if (stopped || running || mutating) return
     running = inspect().catch(error => {
       notify({ type: 'service-error', error: error.message })
       if (batch) batchResult = { phase: 'error', error: error.message }
@@ -389,21 +403,23 @@ export async function createFolderSorter(options) {
       return closing
     },
     async waitForIdle() { if (running) await running },
-    async deleteOutput(source) { if (running) await running; return deleteOutput(source) },
+    async deleteOutput(source) { return exclusive(() => deleteOutput(source)) },
     async updateCategory(source, category) {
-      if (running) await running
-      const updated = await updateFolderCategory({ stateDir, output, source, category })
-      state = JSON.parse(await readFile(stateFile, 'utf8'))
-      outputValidation.clear()
-      return updated
+      return exclusive(async () => {
+        const updated = await updateFolderCategory({ stateDir, output, source, category })
+        state = JSON.parse(await readFile(stateFile, 'utf8'))
+        outputValidation.clear()
+        return updated
+      })
     },
     async rescan() {
-      if (running) await running
-      const summary = await rescanFolderState({ stateDir, input, output })
-      state = JSON.parse(await readFile(stateFile, 'utf8'))
-      outputValidation.clear()
-      notify({ type: 'rescan', ...summary })
-      return summary
+      return exclusive(async () => {
+        const summary = await rescanFolderState({ stateDir, input, output })
+        state = JSON.parse(await readFile(stateFile, 'utf8'))
+        outputValidation.clear()
+        notify({ type: 'rescan', ...summary })
+        return summary
+      })
     },
   }
   tick()

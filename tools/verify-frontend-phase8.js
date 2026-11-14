@@ -112,6 +112,33 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   await page.screenshot({ path: path.join(workspace, 'mobile.png'), fullPage: true })
   assert.deepEqual(report.errors, [])
+  const stalled = await browser.newPage()
+  await stalled.addInitScript(() => {
+    const original = window.setTimeout.bind(window)
+    window.setTimeout = ((handler, delay, ...args) => original(handler, delay === 15000 ? 100 : delay, ...args))
+  })
+  await stalled.route('**/api/status', async route => {
+    await sleep(400)
+    await route.fulfill({ json: status }).catch(() => {})
+  })
+  await stalled.goto(server.origin)
+  await stalled.getByRole('alert').filter({ hasText: '本地服务响应超时' }).waitFor()
+  await stalled.close()
+  const operation = await browser.newPage()
+  await operation.addInitScript(() => {
+    const original = AbortSignal.timeout.bind(AbortSignal)
+    AbortSignal.timeout = milliseconds => original(milliseconds === 300000 ? 100 : milliseconds)
+  })
+  await operation.route('**/api/rescan', async route => {
+    await sleep(400)
+    await route.fulfill({ json: { summary: {} } }).catch(() => {})
+  })
+  await operation.goto(server.origin)
+  await operation.getByRole('button', { name: '刷新当前文件夹', exact: true }).click()
+  await operation.getByRole('alert').filter({ hasText: '操作等待超时' }).waitFor()
+  assert.equal(await operation.getByRole('button', { name: '刷新当前文件夹', exact: true }).isEnabled(), true)
+  await operation.close()
+  report.checks.push('status and operation timeouts show explicit errors and release UI busy state')
   report.passed = true
 } catch (error) { report.error = error.stack; process.exitCode = 1 }
 finally {
