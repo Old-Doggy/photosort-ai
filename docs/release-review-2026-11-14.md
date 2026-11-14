@@ -17,12 +17,13 @@ Scope: redesigned folder workspace, review queue, batch corrections and undo, si
 
 ## Validation
 
-- Unit suite: 158 passed on the review machine, including optional RAW integrations
+- Unit suite: 158 passed on the review machine, including optional RAW integrations; the subsequent codec-independent HEIC regression also passed
 - Isolated public-source checkout: clean `npm ci`, build, lint and public-file check passed without local models or photos; 155 tests passed and the three optional real-RAW integrations skipped
 - Production build and lint passed; the existing lazily loaded legacy page still produces a bundle-size warning
 - Workspace browser regression passed on desktop and 390px mobile layouts, including a generated 1,005-record gallery and 125-photo similarity group
 - Control API with the local CPU analyzer, output-copy deletion safety, and browser rescan checks passed
 - Base assets verified: 21/21; npm official advisory audit reported zero known vulnerabilities at review time
+- Initial hosted CI passed on Ubuntu but exposed missing HEIF/HEVC codecs on Windows. HEIC integration now explicitly skips only that missing-system-codec condition, while brand detection and malformed-image rejection remain tested without codecs
 - Public candidate-file checks exclude photos, weights, generated output and machine reports; font metadata carries upstream attribution
 
 Generated-gallery tests validate rendering bounds, not processing throughput or recognition accuracy. Functional tests using an injected analyzer do not establish model quality. This review did not repeat GPU/NPU kernel profiling or a real VLM accuracy evaluation. HEIC depends on Windows codecs; RAW depends on Python/rawpy and camera support. Ambiguous classification and subjective recommendations still require human review.
