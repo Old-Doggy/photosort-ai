@@ -207,8 +207,8 @@ export async function createPhotoAnalyzer(root, backend = 'auto', model = 'auto'
           visionCategoryApplied = fused.applied
           visionExplanation = { ...fused.vision, triggerReason: visionTrigger.reason }
         } catch (error) {
-          if (options.forceModel === true && !['LENSSORT_VISION_OUTPUT_INVALID', 'LENSSORT_VISION_PHOTO_FAILED'].includes(error.code)) {
-            forcedFailure = Object.assign(new Error(error.message), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
+          if (options.forceModel === true && !['PHOTOSORT_VISION_OUTPUT_INVALID', 'PHOTOSORT_VISION_PHOTO_FAILED'].includes(error.code)) {
+            forcedFailure = Object.assign(new Error(error.message), { code: 'PHOTOSORT_FORCED_MODEL_FAILED' })
             throw forcedFailure
           }
           visionExplanation = { generated: false, error: error.message, model: visionLanguageExplainer.status.model, provider: visionLanguageExplainer.status.provider, categoryApplied: false, triggerReason: visionTrigger.reason }

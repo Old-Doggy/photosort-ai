@@ -60,9 +60,9 @@ test('ordinary review request failure does not invent a stable result', async ()
 test('forced model failure on review reaches the batch stopper', async () => {
   let calls = 0
   await assert.rejects(reviewPhotoDecision({ ...base, explain: async () => {
-    if (++calls === 2) throw Object.assign(new Error('OOM'), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
+    if (++calls === 2) throw Object.assign(new Error('OOM'), { code: 'PHOTOSORT_FORCED_MODEL_FAILED' })
     return sample({ uncertain: true })
-  } }), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
+  } }), { code: 'PHOTOSORT_FORCED_MODEL_FAILED' })
   assert.equal(calls, 2)
 })
 test('initial model failure is propagated, never returned as generated content', async () => {

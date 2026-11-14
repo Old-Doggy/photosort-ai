@@ -31,7 +31,7 @@ export default function ReviewPanel() {
     if (!current || busy) return
     setBusy(true); setError('')
     try {
-      const response = await fetch('/api/review', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': token }, body: JSON.stringify({ imageId: current.imageId, label }) })
+      const response = await fetch('/api/review', { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': token }, body: JSON.stringify({ imageId: current.imageId, label }) })
       const next = await response.json()
       if (!response.ok) throw new Error(next.error ?? '保存失败')
       setState(next)

@@ -1,4 +1,4 @@
-# LensSort AI 有限工程交付报告
+# PhotoSort AI 有限工程交付报告
 
 版本：2026-10-13
 项目目录：`<project-root>`
@@ -60,7 +60,7 @@ NPU 记录包含 `npuVerified=true`，并在 profile 中确认 `VitisAIExecution
 - F6c：两轮优化均未通过至少 10% 的速度改善门槛，保留原始串行基线；不宣称已提速或 NPU 更快。
 - F6b 功耗：等待统一外部测量条件；不继续无限尝试系统传感器。
 - F7.2 真人试用：当前没有参与者，保持外部阻塞；自动化浏览器、演示视频和开发者自测不替代真人满意度。
-- 演示视频：已录制 `output/playwright/lenssort-folder-demo.webm`，1440×900、2:19.56，无旁白、有字幕。实际展示网页按钮、目录新增照片、NPU 混合推理及去重精选；自动化录制不替代真人反馈。视频播放页为 `output/playwright/lenssort-demo-player.html`，工程记录为 `output/playwright/lenssort-folder-demo.json`；公开传播前仍须复核样本授权。
+- 演示视频：已录制 `output/playwright/photosort-folder-demo.webm`，1440×900、2:19.56，无旁白、有字幕。实际展示网页按钮、目录新增照片、NPU 混合推理及去重精选；自动化录制不替代真人反馈。视频播放页为 `output/playwright/photosort-demo-player.html`，工程记录为 `output/playwright/photosort-folder-demo.json`；公开传播前仍须复核样本授权。
 - 启动管理：不属于日常必需能力；历史隔离证据保留，但不宣称真实 Windows 登录触发已验收。
 
 本报告的停止点是“软件核心链路+有限稳定性+网页主入口闭环+交付材料”完成；F5 真实准确率、F6b 统一功耗和 F7.2 真人试用仍按证据标记为未完成/外部阻塞。后续只处理明确外部输入或阻塞性问题，不继续无限扩展功能。

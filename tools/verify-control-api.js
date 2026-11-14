@@ -5,12 +5,12 @@ import { access, mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises'
 import { createControlServer } from './control-server.js'
 
 const root = process.cwd()
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-control-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-control-'))
 const server = await createControlServer({ root, controlDir: path.join(workspace, 'control'), port: 0 })
 const origin = server.origin
 const get = async () => (await fetch(origin + '/api/status')).json()
 const initial = await get()
-const request = async (route, body, token = initial.token) => fetch(origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': token, origin }, body: JSON.stringify(body) })
+const request = async (route, body, token = initial.token) => fetch(origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': token, origin }, body: JSON.stringify(body) })
 try {
   assert.equal((await request('/api/start', {}, 'wrong')).status, 403)
   assert.equal((await request('/api/config', { input: 'relative', output: path.join(workspace, 'output'), backend: 'cpu' })).status, 400)

@@ -109,7 +109,7 @@ test('forced model failure stops the batch instead of continuing with basic anal
   let calls = 0
   const sorter = await createFolderSorter({ ...options, analyze: async () => {
     calls++
-    throw Object.assign(new Error('强制模型运行失败：测试资源不足'), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
+    throw Object.assign(new Error('强制模型运行失败：测试资源不足'), { code: 'PHOTOSORT_FORCED_MODEL_FAILED' })
   } })
   try {
     const result = await finish(sorter)

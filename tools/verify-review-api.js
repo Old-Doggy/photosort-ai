@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
 import { createControlServer } from './control-server.js'
 
 const root = process.cwd()
-const fixture = await mkdtemp(path.join(os.tmpdir(), 'lenssort-review-api-'))
+const fixture = await mkdtemp(path.join(os.tmpdir(), 'photosort-review-api-'))
 const manifest = JSON.parse(await readFile(path.join(root, 'artifacts/open-images-download-manifest.json'), 'utf8'))
 const record = manifest.records[0]
 const fixtureSource = path.join(fixture, record.localPath)
@@ -22,7 +22,7 @@ try {
   const review = await (await fetch(origin + '/api/review')).json()
   assert.equal(review.total, 1)
   assert.equal((await fetch(origin + '/api/review/thumbnail/' + record.imageId)).status, 200)
-  const headers = { 'content-type': 'application/json', 'x-lenssort-token': status.token, origin }
+  const headers = { 'content-type': 'application/json', 'x-photosort-token': status.token, origin }
   const invalid = await fetch(origin + '/api/review', { method: 'POST', headers, body: JSON.stringify({ imageId: record.imageId, label: 'invalid' }) })
   assert.equal(invalid.status, 400)
   const saved = await fetch(origin + '/api/review', { method: 'POST', headers, body: JSON.stringify({ imageId: record.imageId, label: '风景' }) })

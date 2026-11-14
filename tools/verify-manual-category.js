@@ -4,7 +4,7 @@ import os from 'node:os'
 import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { createFolderSorter } from './folder-sorter.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-manual-category-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-manual-category-'))
 const input = path.join(workspace, '中文照片来源')
 const output = path.join(workspace, '中文分类结果')
 const stateDir = path.join(workspace, 'state')

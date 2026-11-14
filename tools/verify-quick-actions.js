@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 import sharp from 'sharp'
 import { createControlServer } from './control-server.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-quick-actions-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-quick-actions-'))
 const input = path.join(workspace, 'input')
 const output = path.join(workspace, 'output')
 const source = path.join(input, 'quick-action-portrait.jpg')
@@ -80,7 +80,7 @@ try {
   await page.locator('button.quick-action').filter({ hasText: '辅助推荐' }).click()
   await page.getByRole('status').filter({ hasText: /已生成辅助推荐/ }).waitFor({ timeout: 30000 })
   await page.waitForFunction(async () => (await (await fetch('/api/status')).json()).phase === 'stopped' && !document.querySelector('.quick-action.secondary').disabled)
-  const secondResponse = await fetch(server.origin + '/api/curate', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': firstStatus.token }, body: '{}' })
+  const secondResponse = await fetch(server.origin + '/api/curate', { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': firstStatus.token }, body: '{}' })
   assert.equal(secondResponse.status, 200)
   const second = await secondResponse.json()
   assert.equal(second.reused, true)

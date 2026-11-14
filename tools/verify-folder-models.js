@@ -26,7 +26,7 @@ for (const backend of ['cpu', 'dml']) {
   } finally { await analyzer.close() }
 }
 checks.push('CPU and DirectML real model inference with positive face detection')
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-real-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-real-'))
 const input = path.join(workspace, 'inbox')
 const output = path.join(workspace, 'sorted')
 const stateDir = path.join(workspace, 'state')

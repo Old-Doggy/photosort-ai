@@ -19,7 +19,7 @@ export async function reviewPersonPresence({ bytes, vision, person = {}, explain
     if (!review.generated || review.uncertain || !review.realPersonPresent || review.bodyPartOnly || review.mediaType !== 'photograph') return { ...vision, presenceReview: evidence }
     return { ...vision, realPersonPresent: true, personCount: null, personCountScope: 'unknown-total', personCountLowerBound: 1, summary: `${vision.summary} 局部复核确认画面中另有真人，未推断全图人数。`, explanation: `${vision.explanation || vision.summary} 局部复核确认画面中另有真人，未推断全图人数。`, presenceReview: evidence }
   } catch (error) {
-    if (error.code === 'LENSSORT_FORCED_MODEL_FAILED') throw error
+    if (error.code === 'PHOTOSORT_FORCED_MODEL_FAILED') throw error
     return { ...vision, presenceReview: { calls: 1, generated: false, error: error.message } }
   }
 }

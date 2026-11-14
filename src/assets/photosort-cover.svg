@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
-  <title id="title">LensSort AI photo sorting workspace</title>
+  <title id="title">PhotoSort AI photo sorting workspace</title>
   <desc id="desc">A camera lens scanning a set of organized photo cards</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -57,4 +57,6 @@
     <text x="55" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700" fill="#145c4e">Sorted locally</text>
   </g>
   <path d="M566 384 710 455" stroke="#f6c86e" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 15" opacity=".7"/>
+  <text x="90" y="552" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700" fill="#e9f8ed">PhotoSort AI</text>
+  <text x="92" y="583" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#b6d9ca">Local AI photo classification</text>
 </svg>

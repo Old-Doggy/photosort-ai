@@ -5,10 +5,10 @@ const original = { category: '多人', confidence: 0.9, reason: '检测器候选
 const review = overrides => ({ generated: true, categoryCandidate: '人物与风景', confidence: 0.01, mediaType: 'photograph', subjectFocus: 'environment_portrait', realPersonPresent: true, personCount: 1, primaryPersonCount: 1, landscapePresent: true, statuePresent: false, animalPresent: false, uncertain: false, ...overrides })
 
 test('precision mode reviews all photos by default without trusting ImageNet confidence', () => {
-  const previous = process.env.LENSSORT_VLM_MODE
-  delete process.env.LENSSORT_VLM_MODE
+  const previous = process.env.PHOTOSORT_VLM_MODE
+  delete process.env.PHOTOSORT_VLM_MODE
   try { assert.equal(getVisionLanguageTrigger({ classification: { category: '风景' }, candidates: [{ score: 0.99 }] }).run, true) }
-  finally { if (previous === undefined) delete process.env.LENSSORT_VLM_MODE; else process.env.LENSSORT_VLM_MODE = previous }
+  finally { if (previous === undefined) delete process.env.PHOTOSORT_VLM_MODE; else process.env.PHOTOSORT_VLM_MODE = previous }
 })
 test('real person and statue may coexist', () => {
   const result = applyVisionLanguageCategory(original, review({ statuePresent: true }), { faces: { faceCount: 1 } })

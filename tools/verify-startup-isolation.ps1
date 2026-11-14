@@ -1,16 +1,16 @@
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ('lenssort-startup-isolation-' + [guid]::NewGuid().ToString('N'))
-$realShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'LensSort AI - Local Control Server.lnk'
+$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ('photosort-startup-isolation-' + [guid]::NewGuid().ToString('N'))
+$realShortcut = Join-Path ([Environment]::GetFolderPath('Startup')) 'PhotoSort AI - Local Control Server.lnk'
 $beforeHash = if (Test-Path -LiteralPath $realShortcut) { (Get-FileHash -LiteralPath $realShortcut -Algorithm SHA256).Hash } else { $null }
-$previousPort = [Environment]::GetEnvironmentVariable('LENSSORT_PORT', 'Process')
-$previousControl = [Environment]::GetEnvironmentVariable('LENSSORT_CONTROL_DIR', 'Process')
+$previousPort = [Environment]::GetEnvironmentVariable('PHOTOSORT_PORT', 'Process')
+$previousControl = [Environment]::GetEnvironmentVariable('PHOTOSORT_CONTROL_DIR', 'Process')
 $sentinel = $null
 $report = [ordered]@{ status = 'failed'; createdAt = (Get-Date).ToUniversalTime().ToString('o'); checks = @() }
 try {
   New-Item -ItemType Directory -Path $workspace -Force | Out-Null
-  $env:LENSSORT_PORT = '0'
-  $env:LENSSORT_CONTROL_DIR = Join-Path $workspace 'control'
+  $env:PHOTOSORT_PORT = '0'
+  $env:PHOTOSORT_CONTROL_DIR = Join-Path $workspace 'control'
   $sentinel = & (Join-Path $root 'tools\run-control-background.ps1') -StateDirectory $workspace -PassThru
   $origin = $null
   for ($attempt = 0; $attempt -lt 60; $attempt++) {
@@ -27,7 +27,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Isolated startup verifier failed' }
   $background = & (Join-Path $root 'tools\verify-background-launcher.ps1') | ConvertFrom-Json
   if ($background.status -ne 'passed') { throw 'Background verifier failed' }
-  if ($env:LENSSORT_PORT -ne '0' -or $env:LENSSORT_CONTROL_DIR -ne (Join-Path $workspace 'control')) { throw 'Verifier changed the caller environment' }
+  if ($env:PHOTOSORT_PORT -ne '0' -or $env:PHOTOSORT_CONTROL_DIR -ne (Join-Path $workspace 'control')) { throw 'Verifier changed the caller environment' }
   $report.checks += 'caller environment restored exactly'
   if (-not (Get-Process -Id $sentinel.Id -ErrorAction SilentlyContinue)) { throw 'Existing same-name server was stopped' }
   if ((Invoke-RestMethod -Uri ($origin + '/api/status')).token -ne $tokenBefore) { throw 'Existing server identity changed' }
@@ -42,8 +42,8 @@ try {
   throw
 } finally {
   if ($sentinel) { Stop-Process -Id $sentinel.Id -Force -ErrorAction SilentlyContinue; Wait-Process -Id $sentinel.Id -Timeout 10 -ErrorAction SilentlyContinue }
-  [Environment]::SetEnvironmentVariable('LENSSORT_PORT', $previousPort, 'Process')
-  [Environment]::SetEnvironmentVariable('LENSSORT_CONTROL_DIR', $previousControl, 'Process')
+  [Environment]::SetEnvironmentVariable('PHOTOSORT_PORT', $previousPort, 'Process')
+  [Environment]::SetEnvironmentVariable('PHOTOSORT_CONTROL_DIR', $previousControl, 'Process')
   $resolved = [System.IO.Path]::GetFullPath($workspace)
   if (-not $resolved.StartsWith([System.IO.Path]::GetTempPath(), [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe sentinel cleanup path' }
   try {

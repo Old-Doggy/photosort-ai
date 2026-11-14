@@ -13,8 +13,8 @@
 也可以用 Git 下载：
 
 ```powershell
-git clone https://github.com/Old-Doggy/lenssort-ai.git
-cd lenssort-ai
+git clone https://github.com/Old-Doggy/photosort-ai.git
+cd photosort-ai
 .\首次安装.cmd
 ```
 

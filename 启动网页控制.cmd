@@ -23,7 +23,7 @@ if not exist dist\index.html (
     exit /b 1
   )
 )
-echo Starting LensSort AI. Keep this window open while using the web page.
+echo Starting PhotoSort AI. Keep this window open while using the web page.
 call npm.cmd run start:control -- --open
 if errorlevel 1 (
   echo [ERROR] The control server stopped or failed to start.

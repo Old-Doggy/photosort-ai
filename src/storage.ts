@@ -63,6 +63,7 @@ export type StoredPhoto = {
   createdAt: number
 }
 
+// Keep the existing database identity so an upgrade retains local photos and feedback
 const DB_NAME = 'lenssort-ai'
 export type CurationState = {
   feedback: Record<string, 'keep' | 'skip'>

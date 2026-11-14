@@ -57,7 +57,7 @@ const confirmReset = async accepted => {
   await reset().click()
 }
 try {
-  await page.goto(process.env.LENSSORT_URL ?? 'http://127.0.0.1:5173')
+  await page.goto(process.env.PHOTOSORT_URL ?? 'http://127.0.0.1:5173')
   await page.locator('.curation-status').filter({ hasText: '本地选择已恢复' }).first().waitFor()
   check('resetEntryExists', await reset().count() === 1)
   check('noPreferenceResetDisabled', await reset().isDisabled())
@@ -127,7 +127,7 @@ try {
   check('photosAndAnalysisUnchanged', JSON.stringify(after.photos) === JSON.stringify(beforeFailure.photos))
   check('historyRetainedAndExactlyOneReset', after.events.length === beforeFailure.events.length + 1 && JSON.stringify(after.events.slice(0, -1)) === JSON.stringify(beforeFailure.events) && after.events.at(-1).type === 'reset-preferences' && after.events.at(-1).affectedPhotoIds.length === 2)
   check('scoresAndOrderReturnToDefault', JSON.stringify(await ranking()) === JSON.stringify(baseline))
-  check('manualCandidateAndModePreserved', (await group.locator('.group-current').textContent()) === candidate && await page.evaluate(() => localStorage.getItem('lenssort-active-mode')) === 'landscape')
+  check('manualCandidateAndModePreserved', (await group.locator('.group-current').textContent()) === candidate && await page.evaluate(() => localStorage.getItem('photosort-active-mode')) === 'landscape')
   check('noDuplicateResetAllowed', await reset().isDisabled())
   const exported = await downloadJson()
   check('exportUsesDefaultWeightsKeepsManualChoices', exported.photos.some(photo => photo.title === 'case01_exact_a.png') && !exported.photos.some(photo => photo.title === 'case03_brightness_b.png') && exported.photos.every(photo => photo.scoreBreakdown.feedback === 0))

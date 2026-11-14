@@ -20,7 +20,7 @@ test('网页模型配置持久化并传入分析器，批次结束自动释放',
     const get = route => fetch(server.origin + route).then(response => response.json())
     const initial = await get('/api/status')
     const post = async (route, body) => {
-      const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': initial.token }, body: JSON.stringify(body) })
+      const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': initial.token }, body: JSON.stringify(body) })
       const text = await response.text()
       assert.equal(response.status, 200, text)
       return text ? JSON.parse(text) : null

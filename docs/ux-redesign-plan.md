@@ -1,4 +1,4 @@
-# LensSort AI 用户体验重构计划
+# PhotoSort AI 用户体验重构计划
 
 > 版本：UX v1.2
 > 日期：2026-10-07
@@ -19,7 +19,7 @@
 - Lightroom、Aftershoot 一类选片工具强调“推荐候选 + 人工确认”，相似照片组内先给一张主候选，再允许快速换图和保留。
 - PhotoPrism、Immich、digiKam 一类本地或自托管相册强调导入状态、隐私边界和可恢复的本地资料库。
 
-LensSort 保留自己的差异点：本地优先、可解释推荐、相似组人工确认和偏好反馈。模型名称、原始 ImageNet 标签、耗时和分数不应成为普通用户必须阅读的主流程。
+PhotoSort 保留自己的差异点：本地优先、可解释推荐、相似组人工确认和偏好反馈。模型名称、原始 ImageNet 标签、耗时和分数不应成为普通用户必须阅读的主流程。
 
 后续研究限于 2 个商业产品和 2 个开源项目，各核验导入、分析进度、相似组、人工选择、导出五个环节。商业候选为 [Aftershoot](https://aftershoot.com/) 和 [Narrative Select](https://narrative.so/select)；开源候选为 [Immich](https://github.com/immich-app/immich) 和 [PhotoPrism](https://github.com/photoprism/photoprism)。这些链接是研究入口，不是当前结论的证据。
 

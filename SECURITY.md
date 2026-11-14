@@ -17,4 +17,4 @@ Include the affected version, a concise impact description, and safe reproductio
 
 ## Scope note
 
-LensSort AI is a local desktop-oriented application. The local control server is not designed to be exposed to the public internet. Keep it bound to the local machine and use the launcher defaults unless you understand the network implications.
+PhotoSort AI is a local desktop-oriented application. The local control server is not designed to be exposed to the public internet. Keep it bound to the local machine and use the launcher defaults unless you understand the network implications.

@@ -1,15 +1,15 @@
 {
-  "name": "lenssort-ai",
+  "name": "photosort-ai",
   "description": "Local-first AI photo folder classification with explainable results and human correction.",
   "version": "0.1.0",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Old-Doggy/lenssort-ai.git"
+    "url": "https://github.com/Old-Doggy/photosort-ai.git"
   },
-  "homepage": "https://github.com/Old-Doggy/lenssort-ai#readme",
+  "homepage": "https://github.com/Old-Doggy/photosort-ai#readme",
   "bugs": {
-    "url": "https://github.com/Old-Doggy/lenssort-ai/issues"
+    "url": "https://github.com/Old-Doggy/photosort-ai/issues"
   },
   "type": "module",
   "engines": { "node": ">=22.12.0" },

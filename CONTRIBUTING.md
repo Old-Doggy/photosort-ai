@@ -1,6 +1,6 @@
-# Contributing to LensSort AI
+# Contributing to PhotoSort AI
 
-Thanks for helping improve LensSort AI.
+Thanks for helping improve PhotoSort AI.
 
 ## Before you start
 

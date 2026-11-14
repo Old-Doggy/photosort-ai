@@ -1,3 +1,4 @@
+import './runtime-compat.js'
 import sharp from 'sharp'
 import { normalizeVision, semanticCategory, visionPrompt, visionSchema, visionReviewPrompt } from './vision-output.js'
 import { chooseSafeModel } from './model-resource-policy.js'
@@ -5,7 +6,7 @@ import { inspectResources, ollamaRequest } from './model-resources.js'
 
 const activeModels = new Set()
 
-export async function createVisionLanguageExplainer({ model = process.env.LENSSORT_VLM_MODEL || 'auto', force = false, request = ollamaRequest, resources = inspectResources, onProgress = () => {} } = {}) {
+export async function createVisionLanguageExplainer({ model = process.env.PHOTOSORT_VLM_MODEL || 'auto', force = false, request = ollamaRequest, resources = inspectResources, onProgress = () => {} } = {}) {
   let selectedModel = 'off'
   let owned = false
   let digest = null
@@ -74,7 +75,7 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       try {
         await request('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: selectedModel, stream: false, keep_alive: '30s' }) }, 120000)
       } catch (cause) {
-        throw Object.assign(new Error(`模型加载失败：${cause.message}`), { code: 'LENSSORT_VISION_PHOTO_FAILED', cause })
+        throw Object.assign(new Error(`模型加载失败：${cause.message}`), { code: 'PHOTOSORT_VISION_PHOTO_FAILED', cause })
       } finally {
         const loaded = findModel(await runningModels().catch(() => []), selectedModel)
         if (loaded) digest = loaded.digest
@@ -88,7 +89,7 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
     try {
       result = await request('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: selectedModel, stream: false, format: visionSchema, think: false, ...(owned ? { keep_alive: '30s' } : {}), messages: [{ role: 'user', content: review ? visionReviewPrompt : visionPrompt, images: [image.toString('base64')] }], options: { temperature: 0, seed: 42, num_ctx: 4096, num_predict: 420 } }) }, 45000)
     } catch (cause) {
-      if (cause.name === 'TimeoutError' || cause.name === 'AbortError' || /timeout|timed out/i.test(cause.message)) throw Object.assign(new Error(`本张照片推理超时：${cause.message}`), { code: 'LENSSORT_VISION_PHOTO_FAILED', cause })
+      if (cause.name === 'TimeoutError' || cause.name === 'AbortError' || /timeout|timed out/i.test(cause.message)) throw Object.assign(new Error(`本张照片推理超时：${cause.message}`), { code: 'PHOTOSORT_VISION_PHOTO_FAILED', cause })
       throw cause
     } finally {
       try {
@@ -106,7 +107,7 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       if (result.done_reason === 'length') throw new Error('视觉描述被截断，未采用不完整输出')
       parsed = normalizeVision(result.message?.content || result.response)
     } catch (error) {
-      error.code = 'LENSSORT_VISION_OUTPUT_INVALID'
+      error.code = 'PHOTOSORT_VISION_OUTPUT_INVALID'
       throw error
     }
     parsed.rawCategoryCandidate = parsed.categoryCandidate
@@ -120,19 +121,19 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
     try { return await explainOnce(bytes, options) }
     catch (failure) {
       let currentError = failure
-      if (currentError.code === 'LENSSORT_VISION_OUTPUT_INVALID') {
+      if (currentError.code === 'PHOTOSORT_VISION_OUTPUT_INVALID') {
         try {
           const repaired = await explainOnce(bytes, { ...options, review: true })
           return { ...repaired, outputRepairCalls: 1, outputRepairReason: currentError.message }
         } catch (retryError) {
-          if (retryError.code === 'LENSSORT_VISION_OUTPUT_INVALID') {
+          if (retryError.code === 'PHOTOSORT_VISION_OUTPUT_INVALID') {
             status = { ...status, status: 'ready', lastPhotoError: retryError.message, message: `本张视觉输出两次无效：${retryError.message}；后续照片仍继续视觉复核。` }
             throw retryError
           }
           currentError = retryError
         }
       }
-      if (currentError.code === 'LENSSORT_VISION_PHOTO_FAILED') {
+      if (currentError.code === 'PHOTOSORT_VISION_PHOTO_FAILED') {
         status = { ...status, status: 'ready', phase: 'photo-failed', lastPhotoError: currentError.message, message: `${currentError.message}；本张待确认，下一张仍使用原模型，不自动切换。` }
         onProgress({ phase: status.phase, message: status.message })
         throw currentError
@@ -150,7 +151,7 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       selectedModel = 'off'
       status = { ...status, status: force ? 'failed' : 'disabled', model: null, fallback: !force, message: force ? `强制模型运行失败：${error.message}；本张照片未使用大模型描述。` : `大模型已保护性停用：${error.message}；后续照片继续基础分析，不伪造大模型描述。` }
       const terminalError = new Error(status.message)
-      if (force) terminalError.code = 'LENSSORT_FORCED_MODEL_FAILED'
+      if (force) terminalError.code = 'PHOTOSORT_FORCED_MODEL_FAILED'
       throw terminalError
     }
   }

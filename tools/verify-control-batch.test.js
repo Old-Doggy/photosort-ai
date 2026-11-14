@@ -24,7 +24,7 @@ test('HTTP batch auto stops, releases analyzer and preserves progress', async ()
   const get = async () => fetch(server.origin + '/api/status').then(response => response.json())
   const token = (await get()).token
   const post = async (route, body = {}) => {
-    const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': token }, body: JSON.stringify(body) })
+    const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': token }, body: JSON.stringify(body) })
     assert.equal(response.status, 200, await response.text())
   }
   const waitStopped = async () => {

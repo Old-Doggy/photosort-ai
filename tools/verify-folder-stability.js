@@ -73,7 +73,7 @@ const report = {
 }
 
 for (const backend of requestedBackends) {
-  const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-stability-'))
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-stability-'))
   const input = path.join(workspace, 'input')
   const output = path.join(workspace, 'output')
   const stateDir = path.join(workspace, 'state')

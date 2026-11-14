@@ -1,10 +1,11 @@
+import './runtime-compat.js'
 import os from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { modelProfiles, chooseSafeModel, summarizeResources } from './model-resource-policy.js'
 
 const execute = promisify(execFile)
-export const ollamaBaseUrl = () => String(process.env.LENSSORT_OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
+export const ollamaBaseUrl = () => String(process.env.PHOTOSORT_OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
 
 export async function ollamaRequest(route, init = {}, timeout = 45000) {
   const response = await fetch(ollamaBaseUrl() + route, { ...init, signal: AbortSignal.timeout(timeout) })

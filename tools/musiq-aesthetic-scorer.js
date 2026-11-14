@@ -14,7 +14,7 @@ export async function createMusiqAestheticScorer(root) {
     async scoreBatch(items, onProgress = () => {}) {
       if (!Array.isArray(items) || items.length > 500) return { status: 'unavailable', error: '单批最多支持500张照片', results: [] }
       if (!items.length) return { status: 'completed', results: [] }
-      const folder = await mkdtemp(path.join(os.tmpdir(), 'lenssort-musiq-'))
+      const folder = await mkdtemp(path.join(os.tmpdir(), 'photosort-musiq-'))
       const manifest = path.join(folder, 'input.json')
       const output = path.join(folder, 'output.json')
       try {

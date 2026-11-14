@@ -14,7 +14,7 @@ export async function reviewPhotoDecision({ bytes, classification, faces, person
       const second = await explain(bytes, { review: true })
       vision = { ...mergeVisionReviews(first, second), firstReview: first, secondReview: second }
     } catch (error) {
-      if (error.code === 'LENSSORT_FORCED_MODEL_FAILED') throw error
+      if (error.code === 'PHOTOSORT_FORCED_MODEL_FAILED') throw error
       vision = { ...first, uncertain: true, reviewConflict: '二次视觉复核失败', reviewError: error.message }
     }
   }

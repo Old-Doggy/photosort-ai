@@ -22,7 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# LensSort local data, generated artifacts and private runtime state
+# PhotoSort local data, generated artifacts and private runtime state
 artifacts/
 output/
 data/
@@ -55,9 +55,9 @@ output/playwright/*.png
 
 # Internal working notes and machine-specific execution logs
 AGENTS.md
-LensSort_AI_执行清单.md
-LensSort_AI_模型与资源清单.md
-LensSort_AI_项目实施方案.md
+PhotoSort_AI_执行清单.md
+PhotoSort_AI_模型与资源清单.md
+PhotoSort_AI_项目实施方案.md
 docs/windows-shell-incidents-*.md
 docs/*-incidents.md
 docs/plan-edit-incident-*.md

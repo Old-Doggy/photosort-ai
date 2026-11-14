@@ -6,7 +6,7 @@ import path from 'node:path'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const root = path.resolve(import.meta.dirname, '..')
-const baseUrl = process.env.LENSSORT_URL ?? 'http://127.0.0.1:5173'
+const baseUrl = process.env.PHOTOSORT_URL ?? 'http://127.0.0.1:5173'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
 const page = await context.newPage()
@@ -56,7 +56,7 @@ const downloadText = async (buttonName) => {
 
 try {
   await page.goto(baseUrl)
-  await page.evaluate(() => { indexedDB.deleteDatabase('lenssort-ai'); localStorage.removeItem('lenssort-active-mode') })
+  await page.evaluate(() => { indexedDB.deleteDatabase('lenssort-ai'); localStorage.removeItem('photosort-active-mode') })
   await page.reload()
   await page.getByRole('button', { name: '清除本次数据', exact: true }).click()
   await status('照片和本地选择已清除')
@@ -108,7 +108,7 @@ try {
   const landscapeTitles = await titles()
   const landscapeScores = await scores()
   check('landscapeLocalOrderChanges', JSON.stringify(landscapeTitles) !== JSON.stringify(peopleTitles) && JSON.stringify(landscapeScores) !== JSON.stringify(peopleScores), { landscapeTitles, landscapeScores })
-  check('modeRefreshRestores', await page.evaluate(() => localStorage.getItem('lenssort-active-mode')) === 'landscape')
+  check('modeRefreshRestores', await page.evaluate(() => localStorage.getItem('photosort-active-mode')) === 'landscape')
   await page.reload()
   await page.locator('.explain-strip').getByText('当前模式：风景精选').waitFor()
   check('landscapeOrderSurvivesRefresh', JSON.stringify(await titles()) === JSON.stringify(landscapeTitles))

@@ -41,7 +41,7 @@ const hold = async (text, milliseconds) => {
 }
 
 try {
-  const configured = await fetch(server.origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': status.token }, body: JSON.stringify({ input, output, backend: 'npu' }) })
+  const configured = await fetch(server.origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': status.token }, body: JSON.stringify({ input, output, backend: 'npu' }) })
   if (!configured.ok) throw new Error('Demo configuration failed')
   await page.goto(server.origin)
   await page.getByRole('button', { name: /一键筛选/ }).waitFor()
@@ -81,7 +81,7 @@ try {
   await page.getByRole('button', { name: /一键筛选/ }).waitFor({ timeout: 30000 })
   await hold('停止筛选后不再监听；分类与精选产出留在输出目录。真实六类准确率、统一功耗、真人反馈仍待验收。', 25000)
   if (errors.length) throw new Error('Demo page errors: ' + errors.join('; '))
-  await page.screenshot({ path: path.join(outputDir, 'lenssort-folder-demo-final.png'), fullPage: true })
+  await page.screenshot({ path: path.join(outputDir, 'photosort-folder-demo-final.png'), fullPage: true })
   report.status = 'passed'
 } catch (error) {
   report.error = error.stack
@@ -90,15 +90,15 @@ try {
   await context.close()
   await browser.close()
   await server.close()
-  await writeFile(path.join(outputDir, 'lenssort-folder-demo.json'), JSON.stringify(report, null, 2))
+  await writeFile(path.join(outputDir, 'photosort-folder-demo.json'), JSON.stringify(report, null, 2))
   await rm(workspace, { recursive: true, force: true })
 }
 
 const videoPath = await video.path()
-const finalPath = path.join(outputDir, 'lenssort-folder-demo.webm')
+const finalPath = path.join(outputDir, 'photosort-folder-demo.webm')
 await rename(videoPath, finalPath)
 report.video = finalPath
 report.sha256 = createHash('sha256').update(await readFile(finalPath)).digest('hex')
 report.flow = ['网页打开', '一键筛选', '放入文件夹后自动分类', '辅助推荐', '停止筛选']
-await writeFile(path.join(outputDir, 'lenssort-folder-demo.json'), JSON.stringify(report, null, 2))
+await writeFile(path.join(outputDir, 'photosort-folder-demo.json'), JSON.stringify(report, null, 2))
 console.log(JSON.stringify(report, null, 2))

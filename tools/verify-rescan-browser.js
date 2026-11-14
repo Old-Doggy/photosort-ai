@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { createControlServer } from './control-server.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-rescan-web-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-rescan-web-'))
 const input = path.join(workspace, '中文来源')
 const output = path.join(workspace, '中文结果')
 const server = await createControlServer({ root: process.cwd(), controlDir: path.join(workspace, 'control'), port: 0 })

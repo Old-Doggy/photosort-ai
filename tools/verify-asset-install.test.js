@@ -8,7 +8,7 @@ import { installAsset, verifyAsset } from './asset-install.js'
 
 const bytes = Buffer.from('verified-model-fixture')
 const asset = { id: 'fixture', path: 'models/test.bin', url: 'https://example.invalid/model', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex').toUpperCase() }
-const rootFor = () => mkdtemp(path.join(os.tmpdir(), 'lenssort 中文 assets '))
+const rootFor = () => mkdtemp(path.join(os.tmpdir(), 'photosort 中文 assets '))
 
 test('verified asset installs atomically, then skips download', async () => {
   const root = await rootFor()

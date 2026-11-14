@@ -4,7 +4,7 @@ import os from 'node:os'
 import { mkdtemp, readFile, readdir, rename, writeFile } from 'node:fs/promises'
 import { writeAtomicJson } from './atomic-state.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-atomic-state-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-atomic-state-'))
 const destination = path.join(workspace, 'records.json')
 await writeFile(destination, JSON.stringify({ version: 'old' }))
 let attempts = 0

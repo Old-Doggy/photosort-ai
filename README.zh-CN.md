@@ -1,12 +1,12 @@
-# LensSort AI
+# PhotoSort AI · 照片自动分类
 
 <p align="center">
   <strong>给喜欢拍照的人做的本地照片整理工具</strong><br />
-  先把重复整理交给 LensSort，最后怎么留由自己决定
+  先把重复整理交给 PhotoSort，最后怎么留由自己决定
 </p>
 
 <p align="center">
-  <a href="https://github.com/Old-Doggy/lenssort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/lenssort-ai/actions/workflows/validate.yml/badge.svg" alt="构建状态" /></a>
+  <a href="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml/badge.svg" alt="构建状态" /></a>
   <img src="https://img.shields.io/badge/平台-Windows-f59e0b" alt="Windows" />
   <img src="https://img.shields.io/badge/许可证-MIT-7c3aed" alt="MIT 许可证" />
 </p>
@@ -19,14 +19,14 @@
 </p>
 
 <p align="center">
-  <img src="src/assets/lenssort-cover.svg" alt="LensSort AI 本地照片分类工具示意图" width="900" />
+  <img src="src/assets/photosort-cover.svg" alt="PhotoSort AI 本地照片分类工具示意图" width="900" />
 </p>
 
 ## 为什么做这个
 
 我平时喜欢拍照，也一直觉得整理照片是摄影里最容易被拖延的一环。旅行或拍摄回来，几百张照片常常会混在同一个文件夹里；真正耗时间的，往往是先把人物、风景、动物、植物和需要仔细确认的照片分出来。
 
-LensSort 是我想把这一步做得轻松一些的尝试。它在本地读取照片，把结果写入单独的副本文件夹，再留出预览和人工修正的空间。我也曾经想让它直接挑出“最好看”的照片，但很快发现，照片好不好取决于拍摄目的、当时的记忆和个人偏好，很难交给一个分数决定。所以现在的重点是分类清楚、结果可检查；辅助推荐只用来缩小浏览范围，最后留下哪些照片，还是由拍照片的人决定。
+PhotoSort 是我想把这一步做得轻松一些的尝试。它在本地读取照片，把结果写入单独的副本文件夹，再留出预览和人工修正的空间。我也曾经想让它直接挑出“最好看”的照片，但很快发现，照片好不好取决于拍摄目的、当时的记忆和个人偏好，很难交给一个分数决定。所以现在的重点是分类清楚、结果可检查；辅助推荐只用来缩小浏览范围，最后留下哪些照片，还是由拍照片的人决定。
 
 ## 隐私与本地处理
 
@@ -43,6 +43,7 @@ LensSort 是我想把这一步做得轻松一些的尝试。它在本地读取�
 
 - 按 `单人`、`多人`、`人物与风景`、`风景`、`动物`、`植物`、`其他`、`待确认` 分类
 - 在网页里选文件夹、看进度、打开大图、修改分类和删除分类副本
+- 大图支持上一张、下一张、键盘方向键和触屏滑动，按当前分类或收藏列表跨页浏览
 - 分类只生成副本，不移动、不改名、不删除来源原图
 - 一批处理完自动停止；新增照片后，再点一次“一键筛选”
 - 点击“刷新当前文件夹”重新核对磁盘文件，移除失效的结果卡片

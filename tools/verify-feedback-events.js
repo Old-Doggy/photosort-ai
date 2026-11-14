@@ -6,7 +6,7 @@ import path from 'node:path'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const root = path.resolve(import.meta.dirname, '..')
-const baseUrl = process.env.LENSSORT_URL ?? 'http://127.0.0.1:5173'
+const baseUrl = process.env.PHOTOSORT_URL ?? 'http://127.0.0.1:5173'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
 const page = await context.newPage()

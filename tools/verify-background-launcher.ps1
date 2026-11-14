@@ -1,17 +1,17 @@
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $launcher = Join-Path $root 'tools\run-control-background.ps1'
-$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ('lenssort-background-verification-' + [guid]::NewGuid().ToString('N'))
+$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ('photosort-background-verification-' + [guid]::NewGuid().ToString('N'))
 $stateDir = Join-Path $workspace 'state'
 $controlDir = Join-Path $workspace 'control'
 $portProbe = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
 $portProbe.Start()
 $port = ([System.Net.IPEndPoint]$portProbe.LocalEndpoint).Port
 $portProbe.Stop()
-$previousPort = [Environment]::GetEnvironmentVariable('LENSSORT_PORT', 'Process')
-$previousControlDir = [Environment]::GetEnvironmentVariable('LENSSORT_CONTROL_DIR', 'Process')
-$env:LENSSORT_PORT = [string]$port
-$env:LENSSORT_CONTROL_DIR = $controlDir
+$previousPort = [Environment]::GetEnvironmentVariable('PHOTOSORT_PORT', 'Process')
+$previousControlDir = [Environment]::GetEnvironmentVariable('PHOTOSORT_CONTROL_DIR', 'Process')
+$env:PHOTOSORT_PORT = [string]$port
+$env:PHOTOSORT_CONTROL_DIR = $controlDir
 $launcherProcess = $null
 $result = [ordered]@{ status = 'failed'; createdAt = (Get-Date).ToUniversalTime().ToString('o'); port = $port; checks = @(); workspace = $workspace }
 $childPid = $null
@@ -62,8 +62,8 @@ try {
   if ($launcherProcess) { Stop-Process -Id $launcherProcess.Id -Force -ErrorAction SilentlyContinue }
   if ($childPid) { Wait-Process -Id $childPid -Timeout 10 -ErrorAction SilentlyContinue }
   if ($launcherProcess) { Wait-Process -Id $launcherProcess.Id -Timeout 10 -ErrorAction SilentlyContinue }
-  [Environment]::SetEnvironmentVariable('LENSSORT_PORT', $previousPort, 'Process')
-  [Environment]::SetEnvironmentVariable('LENSSORT_CONTROL_DIR', $previousControlDir, 'Process')
+  [Environment]::SetEnvironmentVariable('PHOTOSORT_PORT', $previousPort, 'Process')
+  [Environment]::SetEnvironmentVariable('PHOTOSORT_CONTROL_DIR', $previousControlDir, 'Process')
   try {
     if (Test-Path -LiteralPath $workspace) {
       $resolved = (Resolve-Path -LiteralPath $workspace).Path

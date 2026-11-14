@@ -6,7 +6,7 @@ import path from 'node:path'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const root = path.resolve(import.meta.dirname, '..')
-const baseUrl = process.env.LENSSORT_URL ?? 'http://127.0.0.1:5173'
+const baseUrl = process.env.PHOTOSORT_URL ?? 'http://127.0.0.1:5173'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
 const page = await context.newPage()
@@ -22,13 +22,13 @@ const check = (name, passed, details = null) => {
 const modeButton = label => page.getByRole('button', { name: new RegExp(label) })
 const modeStatus = label => page.locator('.explain-strip').getByText(`当前模式：${label}`)
 const cardTitles = () => page.locator('.photo-grid .photo-card h3').allTextContents()
-const modeStorage = () => page.evaluate(() => localStorage.getItem('lenssort-active-mode'))
+const modeStorage = () => page.evaluate(() => localStorage.getItem('photosort-active-mode'))
 
 try {
   await page.goto(baseUrl)
   await page.evaluate(() => {
     indexedDB.deleteDatabase('lenssort-ai')
-    localStorage.removeItem('lenssort-active-mode')
+    localStorage.removeItem('photosort-active-mode')
   })
   await page.reload()
   await page.locator('.demo-tag').filter({ hasText: '演示数据' }).waitFor()

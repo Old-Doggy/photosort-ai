@@ -351,7 +351,7 @@ export async function createFolderSorter(options) {
         if (batch) terminal.set(file, 'failed')
         notify({ type: 'failed', file, error: error.message })
         completed++
-        if (error.code === 'LENSSORT_FORCED_MODEL_FAILED') {
+        if (error.code === 'PHOTOSORT_FORCED_MODEL_FAILED') {
           batchResult = { type: 'progress', phase: 'error', error: error.message, completed, total: files.length, pending: files.length - completed, currentFile: null, message: '强制模型失败，本批已停止；不会改用基础分析。' }
           notify(batchResult)
           return

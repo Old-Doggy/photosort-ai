@@ -10,7 +10,7 @@
 
 The setup needs an internet connection the first time. If a download is interrupted, run the script again; verified files are skipped.
 
-## Start LensSort
+## Start PhotoSort
 
 Double-click `启动网页控制.cmd` from the project folder and keep the command window open. The script opens the local page. If it does not, open the address printed in the window, normally `http://127.0.0.1:4317`.
 
@@ -49,7 +49,7 @@ The page shows the installation state and resource advice. Basic classification 
 
 ## Stop and update
 
-When you are done, press **Ctrl+C** in the LensSort command window. Closing the browser tab alone does not stop the local service. LensSort does not need Windows startup registration.
+When you are done, press **Ctrl+C** in the PhotoSort command window. Closing the browser tab alone does not stop the local service. PhotoSort does not need Windows startup registration.
 
 For a Git checkout, back up local changes, run `git pull --ff-only`, and run `首次安装.cmd` again. For a ZIP installation, extract the new version to a new folder and select your photo folders again. Keep photo folders and results outside the project directory when possible.
 

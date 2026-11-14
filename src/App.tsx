@@ -212,12 +212,12 @@ const samplePhotos: PhotoItem[] = [
 const filterLabels: Record<Filter, string> = { all: '全部照片', person: '人物', landscape: '风景', other: '其他', review: '待确认', quality: '质量风险', similar: '相似照片' }
 const productLabelLabels: Record<ProductLabel, string> = { person: '人物', landscape: '风景', other: '其他', review: '待确认' }
 const modeLabels: Record<Mode, string> = { travel: '旅行记录', people: '人物精选', landscape: '风景精选' }
-const MODE_STORAGE_KEY = 'lenssort-active-mode'
+const MODE_STORAGE_KEY = 'photosort-active-mode'
 const FEEDBACK_SCORE_ADJUSTMENT = 8
 
 function loadActiveMode(): Mode {
   try {
-    const saved = localStorage.getItem(MODE_STORAGE_KEY)
+    const saved = localStorage.getItem(MODE_STORAGE_KEY) ?? localStorage.getItem('lenssort-active-mode')
     return saved === 'travel' || saved === 'people' || saved === 'landscape' ? saved : 'travel'
   } catch {
     return 'travel'
@@ -1582,13 +1582,13 @@ function App() {
         }
       })
     if (format === 'json') {
-      downloadTextFile('lenssort-selection.json', `${JSON.stringify({ exportedAt: new Date().toISOString(), mode: activeMode, modeLabel: modeLabels[activeMode], count: selected.length, photos: selected }, null, 2)}\n`, 'application/json;charset=utf-8')
+      downloadTextFile('photosort-selection.json', `${JSON.stringify({ exportedAt: new Date().toISOString(), mode: activeMode, modeLabel: modeLabels[activeMode], count: selected.length, photos: selected }, null, 2)}\n`, 'application/json;charset=utf-8')
       return
     }
     const headers = ['mode', 'modeLabel', 'id', 'title', 'label', 'recommendationScore', 'reason', 'recommendationStatus', 'recommendationStatusLabel', 'recommendationSummary', 'exportState', 'exportReason', 'supportingFactors', 'cautionFactors', 'scoreBreakdown', 'clarityScore', 'exposureStatus', 'faceCount', 'similarityGroupId']
     const csvRows = selected.map((item) => ({ mode: activeMode, modeLabel: modeLabels[activeMode], ...item }))
     const csv = [headers.join(','), ...csvRows.map((item) => headers.map((header) => toCsvCell(item[header as keyof typeof item])).join(','))].join('\n')
-    downloadTextFile('lenssort-selection.csv', `\ufeff${csv}\n`, 'text/csv;charset=utf-8')
+    downloadTextFile('photosort-selection.csv', `\ufeff${csv}\n`, 'text/csv;charset=utf-8')
   }
 
   const imageStyle = (photo: PhotoItem): CSSProperties | undefined => photo.imageUrl
@@ -1601,7 +1601,7 @@ function App() {
         <div className="brand-lockup">
           <div className="brand-mark">L</div>
           <div>
-            <div className="brand-name">LensSort <span>AI</span></div>
+            <div className="brand-name">PhotoSort <span>AI</span></div>
             <div className="brand-caption">本地优先的照片分类工具</div>
           </div>
         </div>
@@ -1612,7 +1612,7 @@ function App() {
         <div className="hero-copy">
           <p className="eyebrow">AI PHOTO CURATION · MVP</p>
           <h1>从一堆照片里，<br /><em>先挑出值得看的。</em></h1>
-          <p className="hero-description">选择一批旅行或活动照片，LensSort 会先找出值得优先确认的照片，再把相似照片和需要检查的地方整理出来。</p>
+          <p className="hero-description">选择一批旅行或活动照片，PhotoSort 会先找出值得优先确认的照片，再把相似照片和需要检查的地方整理出来。</p>
           <div className="hero-actions">
           <label className={`import-button ${importedPhotos.length > 0 ? 'has-library' : ''} ${isDragging ? 'drag-active' : ''}`} onDragOver={handleDragOver} onDragLeave={() => setIsDragging(false)} onDrop={handleDrop}>
             <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImport} />
@@ -1711,7 +1711,7 @@ function App() {
         {clipEvalError && <p className="import-error" role="alert">{clipEvalError}</p>}
       </section>
 
-      <footer className="footer"><span>LensSort AI · 项目原型 v0.1</span><span>Local-first · Explainable · Human-in-the-loop</span></footer>
+      <footer className="footer"><span>PhotoSort AI · 项目原型 v0.1</span><span>Local-first · Explainable · Human-in-the-loop</span></footer>
 
       {selectedPhoto && <div className="modal-backdrop" role="presentation" onClick={() => setSelectedPhoto(null)}><div className="detail-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setSelectedPhoto(null)}>×</button><div className={`detail-image ${selectedPhoto.gradient ?? ''}`} style={imageStyle(selectedPhoto)}><span className={selectedPhoto.score === null ? 'score-badge large pending' : 'score-badge large'}>{getRecommendationScore(selectedPhoto)}</span></div><div className="detail-content"><p className="eyebrow">{selectedPhoto.isImported ? 'LOCAL PHOTO' : 'AI RECOMMENDATION'}</p><h2>{selectedPhoto.title}</h2><RecommendationExplanation explanation={getRecommendationExplanationForPhoto(selectedPhoto)} /><p className="detail-reason">原始分析：{selectedPhoto.reason}</p>{selectedPhoto.isImported && selectedPhoto.clarityScore !== undefined && <p className="detail-score">本地清晰度评分：<strong>{selectedPhoto.clarityScore}/100</strong></p>}{selectedPhoto.isImported && selectedPhoto.exposureStatus && <p className="detail-exposure">{getExposureReason(selectedPhoto)}</p>}{selectedPhoto.isImported && <p className={selectedPhoto.lowQuality ? 'detail-quality risk' : 'detail-quality'}>{getQualityReason(selectedPhoto)}</p>}{selectedPhoto.isImported && <p className="detail-normalization">{getNormalizationReason(selectedPhoto)}</p>}{selectedPhoto.isImported && <p className={selectedPhoto.isNearDuplicate ? 'detail-similarity risk' : 'detail-similarity'}>{selectedPhoto.isNearDuplicate ? `视觉相似提醒：与相似组中的其他照片接近，dHash 距离 ${selectedPhoto.similarityDistance ?? '—'}；建议人工选择保留版本，不会自动删除。` : '暂未发现视觉上接近的本地照片'}</p>}<div className="detail-stats"><span>清晰度 <strong>{selectedPhoto.isImported && selectedPhoto.clarityScore !== undefined ? `${selectedPhoto.clarityScore}/100` : selectedPhoto.isImported ? '待分析' : '良好'}</strong></span><span>曝光 <strong>{selectedPhoto.isImported && selectedPhoto.exposureStatus ? exposureStatusLabels[selectedPhoto.exposureStatus] : selectedPhoto.isImported ? '待分析' : '正常'}</strong></span><span>相似组 <strong>{selectedPhoto.isImported && selectedPhoto.similarityGroupId ? selectedPhoto.similarityGroupId.replace('similar-', '#') : selectedPhoto.isImported ? '未分组' : '第 4 组'}</strong></span></div><PhotoSentiment ready={curationReady} value={sentiment[selectedPhoto.id]} onChange={(value) => setPhotoSentiment(selectedPhoto.id, value)} /><div className="detail-actions"><button type="button" className="secondary-button" disabled={!curationReady} onClick={() => setPhotoFeedback(selectedPhoto.id, 'skip')}>跳过</button><button type="button" className="primary-small" disabled={!curationReady} onClick={() => setPhotoFeedback(selectedPhoto.id, 'keep')}>保留这张</button></div></div></div></div>}
     </main>

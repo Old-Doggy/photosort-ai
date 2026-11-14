@@ -29,11 +29,14 @@ export default function FolderControl() {
   const statusRequestRef = useRef(0)
   const statusAbortRef = useRef<AbortController | null>(null)
   const detailRequestRef = useRef(0)
+  const detailAbortRef = useRef<AbortController | null>(null)
   const selectedPhotoRef = useRef<RecordItem | null>(null)
   const photoOpenerRef = useRef<HTMLElement | null>(null)
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null)
   const selectedPhotoId = selectedPhoto?.id
+  const previewOpen = !!selectedPhotoId
   useEffect(() => {
-    if (!selectedPhotoId) return
+    if (!previewOpen) return
     const modal = document.querySelector<HTMLElement>('.photo-modal')
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -52,11 +55,14 @@ export default function FolderControl() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => {
+      detailRequestRef.current += 1
+      detailAbortRef.current?.abort()
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
-      if (photoOpenerRef.current?.isConnected) photoOpenerRef.current.focus({ preventScroll: true })
+      const opener = photoOpenerRef.current?.isConnected ? photoOpenerRef.current : document.querySelector<HTMLElement>('.control-photo-open')
+      opener?.focus({ preventScroll: true })
     }
-  }, [selectedPhotoId])
+  }, [previewOpen])
   useEffect(() => { selectedPhotoRef.current = selectedPhoto }, [selectedPhoto])
   const refreshStatus = async () => {
     const requestId = statusRequestRef.current + 1
@@ -107,7 +113,7 @@ export default function FolderControl() {
   const control = async (route: string, body = {}) => {
     if (!status) throw new Error('服务未连接')
     try {
-      const response = await fetch(route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': status.token }, body: JSON.stringify(body), signal: AbortSignal.timeout(300000) })
+      const response = await fetch(route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': status.token }, body: JSON.stringify(body), signal: AbortSignal.timeout(300000) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error ?? '操作失败')
       return result
@@ -170,13 +176,16 @@ export default function FolderControl() {
     finally { setBusy(false) }
   }
   const openPhoto = async (record: RecordItem) => {
-    if (selectedPhotoRef.current?.id !== record.id) photoOpenerRef.current = document.activeElement as HTMLElement | null
+    if (!selectedPhotoRef.current) photoOpenerRef.current = document.activeElement as HTMLElement | null
     const requestId = detailRequestRef.current + 1
     detailRequestRef.current = requestId
+    detailAbortRef.current?.abort()
+    const controller = new AbortController()
+    detailAbortRef.current = controller
     selectedPhotoRef.current = record
     setSelectedPhoto(record); setDetailLoading(true); setDetailError(''); setImageLoadError(false); setImageRetryKey(0); setError('')
     try {
-      const response = await fetch('/api/photo/' + record.id, { cache: 'no-store' })
+      const response = await fetch('/api/photo/' + record.id, { cache: 'no-store', signal: controller.signal })
       const details: RecordItem & { error?: string } = await response.json()
       if (!response.ok) throw new Error(details.error ?? '无法读取照片详情')
       if (requestId === detailRequestRef.current) setSelectedPhoto(current => current?.id === record.id ? details : current)
@@ -272,6 +281,27 @@ export default function FolderControl() {
   const totalPages = Math.max(1, Math.ceil(visible.length / pageSize))
   const activePage = Math.min(currentPage, totalPages)
   const displayed = visible.slice((activePage - 1) * pageSize, activePage * pageSize)
+  const previewable = visible.filter(record => record.status === 'done')
+  const previewIndex = previewable.findIndex(record => record.id === selectedPhotoId)
+  const navigatePhoto = (direction: number) => {
+    if (busy || previewIndex < 0) return
+    const next = previewable[previewIndex + direction]
+    if (!next) return
+    setCurrentPage(Math.floor(visible.findIndex(record => record.id === next.id) / pageSize) + 1)
+    void openPhoto(next)
+  }
+  useEffect(() => {
+    if (!selectedPhotoId) return
+    const onArrow = (event: KeyboardEvent) => {
+      const target = event.target
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || target instanceof HTMLElement && target.closest('input, select, textarea, [contenteditable]')) return
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      navigatePhoto(event.key === 'ArrowLeft' ? -1 : 1)
+    }
+    document.addEventListener('keydown', onArrow)
+    return () => document.removeEventListener('keydown', onArrow)
+  })
   const categoryCounts = records.reduce<Record<string, number>>((counts, record) => {
     if (record.status === 'failed') counts['失败'] = (counts['失败'] ?? 0) + 1
     if (record.category) counts[record.category] = (counts[record.category] ?? 0) + 1
@@ -306,8 +336,8 @@ export default function FolderControl() {
       : '当前没有检测到脸部候选区域；这不能单独证明画面没有人'
   const selectedVisionStatus = selectedVision?.generated ? `视觉模型说明${selectedVision.model ? ` · ${selectedVision.model}` : ''}` : '基础分析说明'
   return <main className="folder-control">
-    <header className="control-header"><div className="control-brand"><span className="control-brand-mark">L</span><span>LensSort AI</span></div><a href="?legacy=1">实验入口</a></header>
-    <section className="control-intro"><p>LOCAL PHOTO ORGANIZER</p><h1>照片放进去，剩下的交给 LensSort</h1><span className="two-line-copy intro-copy"><span>自动分类为主，辅助推荐供参考</span><span>原图始终保留，可随时人工修正</span></span></section>
+    <header className="control-header"><div className="control-brand"><span className="control-brand-mark">P</span><span>PhotoSort AI · 照片自动分类</span></div><a href="?legacy=1">实验入口</a></header>
+    <section className="control-intro"><p>LOCAL PHOTO ORGANIZER</p><h1>照片放进去，剩下的交给 PhotoSort</h1><span className="two-line-copy intro-copy"><span>自动分类为主，辅助推荐供参考</span><span>原图始终保留，可随时人工修正</span></span></section>
     <section className="workspace-settings-card" aria-label="设置文件夹与设备">
       <div className="workspace-settings-heading"><div className="source-folder-icon" aria-hidden="true">⚙</div><div><p className="source-folder-kicker">当前工作目录与设备</p><h2 id="source-folder-title">设置文件夹与设备</h2><span>目录、设备与运行状态</span></div><span className={status ? 'source-folder-connection connected' : 'source-folder-connection'}>{status ? '本地服务已连接' : '等待连接'}</span></div>
       <div className="folder-setting-grid">
@@ -336,7 +366,7 @@ export default function FolderControl() {
       <nav className="control-filters" aria-label="分类筛选">{categories.map(category => <button type="button" key={category} className={filter === category ? 'active' : ''} aria-current={filter === category ? 'page' : undefined} onClick={() => { setFilter(category); setCurrentPage(1) }}><span>{category}</span><b>{categoryCounts[category] ?? 0}</b></button>)}</nav>
         {visible.length === 0 && <div className="control-empty"><span className="control-empty-icon" aria-hidden="true">○</span><strong>{running ? '正在读取本批照片' : emptyState.title}</strong><p className="two-line-copy"><span>{emptyState.lines[0]}</span><span>{emptyState.lines[1]}</span></p>{filter === '失败' && <button type="button" className="control-empty-action" disabled={busy || rescanBusy || !status} onClick={() => void rescan()}>{rescanBusy ? '正在刷新…' : '刷新当前文件夹'}</button>}</div>}<div className="control-grid" hidden={visible.length === 0}>{displayed.map(record => <article key={record.id} className={`control-photo${record.category === '待确认' ? ' needs-review' : ''}${record.status !== 'done' ? ' is-unavailable' : ''}`}><button type="button" className="control-photo-open" onClick={() => record.status === 'done' && void openPhoto(record)} aria-label={'查看照片 ' + record.name}>{record.status === 'done' ? <img src={'/api/thumbnail/' + record.id} alt={record.name} loading="lazy" /> : <span className="control-photo-failed">{record.manualAction === 'deleted-output' ? '分类副本已删除' : record.status === 'source-missing' ? '输入原图已移除' : record.status === 'output-missing' ? '分类副本已缺失' : '无法读取照片'}</span>}</button><div className="control-photo-body"><div className="control-photo-heading">{record.favorite && <span className="favorite-badge">收藏</span>}<span className="control-category">{record.category ?? '失败'}</span>{record.curated && <span className="curated-badge">推荐</span>}{record.manualCategory && <span className="manual-category-badge">人工修正</span>}</div><h3>{record.name}</h3><p className="photo-explanation">{record.status !== 'done' ? (record.manualAction === 'deleted-output' ? '分类副本已删除，可刷新当前文件夹' : record.status === 'source-missing' ? '输入原图已从来源文件夹移除' : record.status === 'output-missing' ? '分类副本已缺失，可重新扫描核对' : record.error ?? '这张照片暂时无法读取') : record.manualCategory ? `已人工调整为“${record.category}”` : record.curated ? '已加入辅助推荐，可打开详情查看依据' : '已完成分类，可打开详情查看说明'}</p><div className="photo-card-footer">{record.status !== 'done' ? <small className="photo-status-secondary">需要处理</small> : <small className="photo-status-secondary">{record.category === '待确认' ? '建议人工查看' : '已完成'}</small>}{record.status === 'done' && <><button type="button" className={`favorite-card-action${record.favorite ? ' active' : ''}`} aria-label={record.favorite ? '取消收藏' : '收藏照片'} aria-pressed={record.favorite === true} onClick={() => void toggleFavorite(record)}>{record.favorite ? '★' : '☆'}</button><button type="button" className="photo-detail-link" onClick={() => void openPhoto(record)}>查看详情</button></>}</div></div></article>)}</div><div className="photo-pagination" aria-label="照片分页"><label>每页显示<select aria-label="每页显示" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setCurrentPage(1) }}><option value={30}>30 张</option><option value={60}>60 张</option><option value={120}>120 张</option></select></label><span className="photo-pagination-current">第 {activePage} / {totalPages} 页</span><span className="photo-pagination-total">共 {visible.length} 张</span><div className="photo-pagination-buttons"><button type="button" disabled={activePage <= 1} onClick={() => setCurrentPage(page => Math.max(1, page - 1))}>上一页</button><button type="button" disabled={activePage >= totalPages} onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}>下一页</button></div></div>
     </section>
-      {selectedPhoto && <div className="photo-modal-backdrop" onClick={() => setSelectedPhoto(null)}><section className="photo-modal" role="dialog" aria-modal="true" aria-label={'照片详情 ' + selectedPhoto.name} onClick={event => event.stopPropagation()}><button type="button" className="photo-modal-close" autoFocus onClick={() => setSelectedPhoto(null)}>关闭 ×</button><div className="photo-modal-image">{selectedPhoto.status === 'done' && !imageLoadError ? <img key={`${selectedPhoto.id}-${imageRetryKey}`} src={selectedImageSource} alt={selectedPhoto.name} onError={() => setImageLoadError(true)} /> : <div className="photo-modal-image-state" role="status"><strong>{imageLoadError ? '大图暂时无法读取' : '这张照片暂时无法预览'}</strong><span>{imageLoadError ? '可以重试读取，或关闭详情后刷新当前文件夹' : selectedPhoto.error ?? '当前记录没有可用的输出副本'}</span>{imageLoadError && <button type="button" onClick={() => { setImageLoadError(false); setImageRetryKey(value => value + 1) }}>重试读取大图</button>}</div>}</div><div className="photo-modal-info"><div className="photo-modal-kicker">照片分析说明</div><div className="photo-modal-heading"><div className="control-photo-heading"><span className="control-category">{selectedPhoto.category ?? '未分类'}</span>{selectedPhoto.favorite && <span className="favorite-badge">收藏</span>}{selectedPhoto.manualCategory && <span className="manual-category-badge">人工修正</span>}{selectedPhoto.curated && <span className="curated-badge">辅助推荐</span>}</div><span className="photo-explanation-source">{selectedVisionStatus}</span></div><h2>{selectedPhoto.name}</h2><button type="button" className={`favorite-action${selectedPhoto.favorite ? ' active' : ''}`} disabled={busy || selectedPhoto.status !== 'done'} onClick={() => void toggleFavorite(selectedPhoto)}>{selectedPhoto.favorite ? '★ 已收藏' : '☆ 收藏照片'}</button>{detailLoading && <p className="photo-detail-loading" role="status">正在读取最新照片说明…</p>}{detailError && <div className="photo-detail-error" role="alert"><strong>照片说明读取失败</strong><span>{detailError}</span><button type="button" onClick={retryPhotoDetail}>重试读取说明</button></div>}<section className="photo-natural-explanation" aria-label="普通语言说明"><strong>画面解读</strong><p>{selectedNaturalExplanation}</p><p className="photo-person-note">{selectedPersonNote}</p>{selectedVision?.generated && (selectedVision.compositionComment || selectedVision.qualityComment) && <div className="photo-vision-observations"><span>{selectedVision.compositionComment ?? '暂时没有构图说明'}</span><span>{selectedVision.qualityComment ?? '暂时没有质量说明'}</span></div>}</section><CurationResults record={selectedPhoto} /><div className="photo-detail-summary"><span>场景：{selectedPhoto.sceneLabel ?? selectedVision?.scene ?? '综合判断'}</span><span>{selectedVision?.generated ? `视觉模型人数：${selectedVision.personCount ?? '未确定'}` : `脸部候选：${selectedPhoto.faceCount ?? 0}`}</span><span>质量：{selectedPhoto.qualityScore !== undefined ? selectedPhoto.qualityScore + '/100' : '暂无'}</span></div><details className="photo-technical"><summary>查看技术依据</summary><dl><dt>分类依据</dt><dd>{selectedPhoto.reason ?? '暂无文字依据'}{selectedPhoto.visionCategoryApplied ? ' · 已采用视觉模型类别' : ''}</dd><dt>清晰度 / 曝光</dt><dd>{selectedPhoto.clarityScore ?? '暂无'} / {selectedPhoto.exposureStatus ?? '暂无'}</dd><dt>推理设备 / 耗时</dt><dd>{selectedPhoto.device?.name ?? '暂无'} / {selectedPhoto.durationMs ?? '暂无'} ms</dd><dt>视觉模型</dt><dd>{selectedVision?.generated ? `${selectedVision.model ?? '本地视觉模型'} · ${selectedVision.reviewCalls ? `复核 ${selectedVision.reviewCalls} 次` : '单次观察'}` : selectedPhoto.visionModelStatus?.message ?? '本批未启用视觉模型'}</dd><dt>加速验证</dt><dd>{selectedPhoto.npuVerified ? `NPU 已验证 · ${selectedPhoto.npuEvidence?.npuKernelCount ?? 0} 个融合内核 · ${selectedPhoto.npuEvidence?.npuKernelMs ?? 0} ms` : '本地基础推理已完成，未提供 NPU 验证证据'}</dd></dl></details><div className="photo-modal-actions"><div className="photo-action-heading"><strong>人工修正</strong><span>只移动分类结果副本，输入文件夹中的原图始终保留</span></div><label className="category-editor">将照片移到<select aria-label="修改照片分类" value={selectedPhoto.category ?? ''} disabled={busy || selectedPhoto.status !== 'done'} onChange={event => void updateCategory(selectedPhoto, event.target.value)}><option value="" disabled>选择新分类</option>{categories.filter(category => !['全部', '收藏', '辅助推荐', '失败'].includes(category)).map(category => <option key={category} value={category}>{category}</option>)}</select></label><button type="button" className="danger-action" onClick={() => void deleteOutput(selectedPhoto)} disabled={busy || selectedPhoto.status !== 'done'}>删除分类副本</button><p className="control-note two-line-copy"><span>只删除分类副本，来源文件夹中的原图始终保留</span><span>刷新当前文件夹可核对最新磁盘内容</span></p></div></div></section></div>}
+      {selectedPhoto && <div className="photo-modal-backdrop" onClick={() => setSelectedPhoto(null)}><section className="photo-modal" role="dialog" aria-modal="true" aria-label={'照片详情 ' + selectedPhoto.name} onClick={event => event.stopPropagation()}><button type="button" className="photo-modal-close" autoFocus onClick={() => setSelectedPhoto(null)}>关闭 ×</button><div className="photo-modal-image" onTouchStart={event => { const touch = event.touches[0]; swipeStartRef.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null }} onTouchCancel={() => { swipeStartRef.current = null }} onTouchEnd={event => { const start = swipeStartRef.current; swipeStartRef.current = null; const end = event.changedTouches[0]; if (start && end && Math.abs(end.clientX - start.x) >= 60 && Math.abs(end.clientX - start.x) > Math.abs(end.clientY - start.y) * 1.5) navigatePhoto(end.clientX < start.x ? 1 : -1) }}><div className="photo-preview-navigation" aria-label="照片浏览"><button type="button" aria-label="上一张照片" disabled={busy || previewIndex <= 0} onClick={() => navigatePhoto(-1)}>← 上一张</button><span aria-live="polite">{previewIndex >= 0 ? `${previewIndex + 1} / ${previewable.length}` : '当前照片'}<small>方向键 / 左右滑动</small></span><button type="button" aria-label="下一张照片" disabled={busy || previewIndex < 0 || previewIndex >= previewable.length - 1} onClick={() => navigatePhoto(1)}>下一张 →</button></div>{selectedPhoto.status === 'done' && !imageLoadError ? <img key={`${selectedPhoto.id}-${imageRetryKey}`} src={selectedImageSource} alt={selectedPhoto.name} onError={() => setImageLoadError(true)} /> : <div className="photo-modal-image-state" role="status"><strong>{imageLoadError ? '大图暂时无法读取' : '这张照片暂时无法预览'}</strong><span>{imageLoadError ? '可以重试读取，或关闭详情后刷新当前文件夹' : selectedPhoto.error ?? '当前记录没有可用的输出副本'}</span>{imageLoadError && <button type="button" onClick={() => { setImageLoadError(false); setImageRetryKey(value => value + 1) }}>重试读取大图</button>}</div>}</div><div className="photo-modal-info"><div className="photo-modal-kicker">照片分析说明</div><div className="photo-modal-heading"><div className="control-photo-heading"><span className="control-category">{selectedPhoto.category ?? '未分类'}</span>{selectedPhoto.favorite && <span className="favorite-badge">收藏</span>}{selectedPhoto.manualCategory && <span className="manual-category-badge">人工修正</span>}{selectedPhoto.curated && <span className="curated-badge">辅助推荐</span>}</div><span className="photo-explanation-source">{selectedVisionStatus}</span></div><h2>{selectedPhoto.name}</h2><button type="button" className={`favorite-action${selectedPhoto.favorite ? ' active' : ''}`} disabled={busy || selectedPhoto.status !== 'done'} onClick={() => void toggleFavorite(selectedPhoto)}>{selectedPhoto.favorite ? '★ 已收藏' : '☆ 收藏照片'}</button>{detailLoading && <p className="photo-detail-loading" role="status">正在读取最新照片说明…</p>}{detailError && <div className="photo-detail-error" role="alert"><strong>照片说明读取失败</strong><span>{detailError}</span><button type="button" onClick={retryPhotoDetail}>重试读取说明</button></div>}<section className="photo-natural-explanation" aria-label="普通语言说明"><strong>画面解读</strong><p>{selectedNaturalExplanation}</p><p className="photo-person-note">{selectedPersonNote}</p>{selectedVision?.generated && (selectedVision.compositionComment || selectedVision.qualityComment) && <div className="photo-vision-observations"><span>{selectedVision.compositionComment ?? '暂时没有构图说明'}</span><span>{selectedVision.qualityComment ?? '暂时没有质量说明'}</span></div>}</section><CurationResults record={selectedPhoto} /><div className="photo-detail-summary"><span>场景：{selectedPhoto.sceneLabel ?? selectedVision?.scene ?? '综合判断'}</span><span>{selectedVision?.generated ? `视觉模型人数：${selectedVision.personCount ?? '未确定'}` : `脸部候选：${selectedPhoto.faceCount ?? 0}`}</span><span>质量：{selectedPhoto.qualityScore !== undefined ? selectedPhoto.qualityScore + '/100' : '暂无'}</span></div><details className="photo-technical"><summary>查看技术依据</summary><dl><dt>分类依据</dt><dd>{selectedPhoto.reason ?? '暂无文字依据'}{selectedPhoto.visionCategoryApplied ? ' · 已采用视觉模型类别' : ''}</dd><dt>清晰度 / 曝光</dt><dd>{selectedPhoto.clarityScore ?? '暂无'} / {selectedPhoto.exposureStatus ?? '暂无'}</dd><dt>推理设备 / 耗时</dt><dd>{selectedPhoto.device?.name ?? '暂无'} / {selectedPhoto.durationMs ?? '暂无'} ms</dd><dt>视觉模型</dt><dd>{selectedVision?.generated ? `${selectedVision.model ?? '本地视觉模型'} · ${selectedVision.reviewCalls ? `复核 ${selectedVision.reviewCalls} 次` : '单次观察'}` : selectedPhoto.visionModelStatus?.message ?? '本批未启用视觉模型'}</dd><dt>加速验证</dt><dd>{selectedPhoto.npuVerified ? `NPU 已验证 · ${selectedPhoto.npuEvidence?.npuKernelCount ?? 0} 个融合内核 · ${selectedPhoto.npuEvidence?.npuKernelMs ?? 0} ms` : '本地基础推理已完成，未提供 NPU 验证证据'}</dd></dl></details><div className="photo-modal-actions"><div className="photo-action-heading"><strong>人工修正</strong><span>只移动分类结果副本，输入文件夹中的原图始终保留</span></div><label className="category-editor">将照片移到<select aria-label="修改照片分类" value={selectedPhoto.category ?? ''} disabled={busy || selectedPhoto.status !== 'done'} onChange={event => void updateCategory(selectedPhoto, event.target.value)}><option value="" disabled>选择新分类</option>{categories.filter(category => !['全部', '收藏', '辅助推荐', '失败'].includes(category)).map(category => <option key={category} value={category}>{category}</option>)}</select></label><button type="button" className="danger-action" onClick={() => void deleteOutput(selectedPhoto)} disabled={busy || selectedPhoto.status !== 'done'}>删除分类副本</button><p className="control-note two-line-copy"><span>只删除分类副本，来源文件夹中的原图始终保留</span><span>刷新当前文件夹可核对最新磁盘内容</span></p></div></div></section></div>}
       <footer>照片只在本机处理 · 自动复制，不删除原图 · 本批完成自动停止</footer>
   </main>
 }

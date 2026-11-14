@@ -9,7 +9,7 @@ const input = path.resolve(option('input', path.join(root, 'artifacts/open-image
 const output = path.resolve(option('output', path.join(root, 'artifacts/open-images-download-manifest.json')))
 const targetRoot = path.resolve(option('target-root', path.join(root, 'data/eval/public-candidates/open-images')))
 const maximum = boundedInteger(option('maximum', '120'), 'maximum', 120)
-const userAgent = 'LensSortAI-public-eval/1.0 (local evaluation)'
+const userAgent = 'PhotoSortAI-public-eval/1.0 (local evaluation)'
 
 function option(name, fallback) {
   const prefix = '--' + name + '='

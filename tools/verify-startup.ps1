@@ -1,8 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $manager = Join-Path $root 'tools\manage-startup.ps1'
-$startup = Join-Path ([System.IO.Path]::GetTempPath()) ('lenssort-startup-verification-' + [guid]::NewGuid().ToString('N'))
-$shortcut = Join-Path $startup 'LensSort AI - Local Control Server.lnk'
+$startup = Join-Path ([System.IO.Path]::GetTempPath()) ('photosort-startup-verification-' + [guid]::NewGuid().ToString('N'))
+$shortcut = Join-Path $startup 'PhotoSort AI - Local Control Server.lnk'
 $checks = [System.Collections.Generic.List[string]]::new()
 $reportPath = Join-Path $root 'artifacts\startup-verification.json'
 $run = {

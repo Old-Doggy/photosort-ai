@@ -11,7 +11,7 @@ $launcher = Join-Path $root 'tools\run-control-background.ps1'
 $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
 $node = (Get-Command node.exe -ErrorAction SilentlyContinue).Source
 $startup = if ($StartupDirectory) { (Resolve-Path -LiteralPath $StartupDirectory -ErrorAction Stop).Path } else { [Environment]::GetFolderPath('Startup') }
-$shortcut = Join-Path $startup 'LensSort AI - Local Control Server.lnk'
+$shortcut = Join-Path $startup 'PhotoSort AI - Local Control Server.lnk'
 
 function Test-Setup {
   if (-not $node) { throw 'node.exe not found in PATH' }
@@ -26,7 +26,7 @@ function New-StartupShortcut {
   $link.TargetPath = $powershell
   $link.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $launcher + '"'
   $link.WorkingDirectory = $root
-  $link.Description = 'Starts the LensSort AI local web control server; does not start photo filtering.'
+  $link.Description = 'Starts the PhotoSort AI local web control server; does not start photo filtering.'
   $link.Save()
 }
 

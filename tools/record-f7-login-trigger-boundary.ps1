@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $startup = [Environment]::GetFolderPath('Startup')
-$shortcut = Join-Path $startup 'LensSort AI - Local Control Server.lnk'
+$shortcut = Join-Path $startup 'PhotoSort AI - Local Control Server.lnk'
 $isInstalled = Test-Path -LiteralPath $shortcut -PathType Leaf
 $evidence = [ordered]@{
   status = 'external-input-required'

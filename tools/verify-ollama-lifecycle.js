@@ -9,7 +9,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const reachable = async port => fetch(`http://127.0.0.1:${port}/api/status`).then(response => response.ok).catch(() => false)
 
 async function runServer(port, stateDir) {
-  const child = spawn(process.execPath, ['tools/start-control-server.js'], { cwd: root, env: { ...process.env, LENSSORT_PORT: String(port), LENSSORT_CONTROL_DIR: stateDir }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child = spawn(process.execPath, ['tools/start-control-server.js'], { cwd: root, env: { ...process.env, PHOTOSORT_PORT: String(port), PHOTOSORT_CONTROL_DIR: stateDir }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
   child.stdout.on('data', chunk => { output += String(chunk) })
   for (let index = 0; index < 60 && !(await reachable(port)); index++) await sleep(250)

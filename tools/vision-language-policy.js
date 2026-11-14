@@ -1,3 +1,4 @@
+import './runtime-compat.js'
 const categories = new Set(['单人', '多人', '人物与风景', '风景', '动物', '植物', '其他', '待确认'])
 import { getReliablePersonCount } from './folder-classification.js'
 
@@ -5,7 +6,7 @@ const numberOf = value => Number.isFinite(Number(value)) ? Number(value) : 0
 const truth = value => value === true || value === 1 || value === 'true'
 
 export function getVisionLanguageTrigger({ classification = {}, candidates = [], faces = {}, person = {}, scene = {} } = {}) {
-  const mode = String(process.env.LENSSORT_VLM_MODE || 'precision').toLowerCase()
+  const mode = String(process.env.PHOTOSORT_VLM_MODE || 'precision').toLowerCase()
   if (mode === 'off') return { run: false, reason: '视觉复核已关闭' }
   if (mode !== 'uncertain') return { run: true, reason: '精度优先模式：进行全量视觉复核' }
   const topScore = numberOf(candidates[0]?.score)

@@ -1,3 +1,4 @@
+import './runtime-compat.js'
 import http from 'node:http'
 import path from 'node:path'
 import os from 'node:os'
@@ -22,17 +23,17 @@ const execute = promisify(execFile)
 
 async function chooseFolder(current) {
   if (process.platform !== 'win32') throw Object.assign(new Error('系统文件夹选择器目前仅支持 Windows；请直接输入绝对路径'), { status: 400 })
-  const selectedFile = path.join(os.tmpdir(), 'lenssort-folder-' + randomBytes(12).toString('hex') + '.txt')
+  const selectedFile = path.join(os.tmpdir(), 'photosort-folder-' + randomBytes(12).toString('hex') + '.txt')
   const script = [
     "Add-Type -AssemblyName System.Windows.Forms",
     '$dialog = New-Object System.Windows.Forms.FolderBrowserDialog',
-    "$dialog.Description = '选择 LensSort 照片文件夹'",
+    "$dialog.Description = '选择 PhotoSort 照片文件夹'",
     '$dialog.ShowNewFolderButton = $true',
-    '$dialog.SelectedPath = $env:LENSORT_INITIAL_PATH',
-    `if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [System.IO.File]::WriteAllText($env:LENSORT_SELECTED_FILE, $dialog.SelectedPath, [System.Text.UTF8Encoding]::new($false)) }`,
+    '$dialog.SelectedPath = $env:PHOTOSORT_INITIAL_PATH',
+    `if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [System.IO.File]::WriteAllText($env:PHOTOSORT_SELECTED_FILE, $dialog.SelectedPath, [System.Text.UTF8Encoding]::new($false)) }`,
   ].join('; ')
   try {
-    await execute('powershell.exe', ['-NoProfile', '-STA', '-Command', script], { windowsHide: false, timeout: 300000, maxBuffer: 16384, env: { ...process.env, LENSORT_INITIAL_PATH: String(current || ''), LENSORT_SELECTED_FILE: selectedFile } })
+    await execute('powershell.exe', ['-NoProfile', '-STA', '-Command', script], { windowsHide: false, timeout: 300000, maxBuffer: 16384, env: { ...process.env, PHOTOSORT_INITIAL_PATH: String(current || ''), PHOTOSORT_SELECTED_FILE: selectedFile } })
     const selected = (await readFile(selectedFile, 'utf8')).trim()
     return selected ? path.resolve(selected) : null
   } catch (error) {
@@ -158,7 +159,7 @@ export async function createControlServer({ root, controlDir = path.join(root, '
       analyzer = await analyzerFactory(root, config.backend, config.model, { forceModel: config.forceModel === true, onProgress: event => { progress = { ...progress, message: event.message }; events.push({ type: 'vision-progress', ...event, at: new Date().toISOString() }); if (events.length > 50) events.shift() } })
       progress = { phase: 'starting', completed: 0, total: 0, pending: 0, currentFile: null, message: '模型已就绪，正在扫描本批照片…' }
       const vision = analyzer.visionModelStatus
-      const analysisVersion = `global-v8:person-tiles:${vision?.status ?? 'none'}:${vision?.model ?? 'none'}:${process.env.LENSSORT_VLM_MODE || 'precision'}:${config.forceModel ? 'forced' : 'safe'}`
+      const analysisVersion = `global-v8:person-tiles:${vision?.status ?? 'none'}:${vision?.model ?? 'none'}:${process.env.PHOTOSORT_VLM_MODE || 'precision'}:${config.forceModel ? 'forced' : 'safe'}`
        sorter = await createFolderSorter({ ...config, batch: true, stateDir: stateDir(), analysisVersion, pollMs: 300, stableMs: 800, analyze: bytes => analyzer.analyze(bytes), onEvent: event => { if (event.type === 'progress') progress = event; else { events.push({ ...event, at: new Date().toISOString() }); if (events.length > 50) events.shift() } } })
       phase = 'running'
       const activeSorter = sorter
@@ -188,7 +189,8 @@ export async function createControlServer({ root, controlDir = path.join(root, '
         json(response, 200, reviewStatus(await readPublicReview(root))); return
       }
       if (request.method === 'POST' && route.startsWith('/api/')) {
-        if (request.headers['x-lenssort-token'] !== token || request.headers['content-type'] !== 'application/json') { json(response, 403, { error: 'Invalid control token' }); return }
+        const controlToken = request.headers['x-photosort-token'] ?? request.headers['x-lenssort-token']
+        if (controlToken !== token || request.headers['content-type'] !== 'application/json') { json(response, 403, { error: 'Invalid control token' }); return }
         if (mutating) { json(response, 409, { error: '另一项操作正在保存，请稍后重试' }); return }
         mutating = true
         ownsMutation = true

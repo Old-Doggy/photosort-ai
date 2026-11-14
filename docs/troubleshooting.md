@@ -15,7 +15,7 @@ If a download was interrupted, run `首次安装.cmd` again. Verified files are 
 
 Keep the command window from `启动网页控制.cmd` open and look for the local address in its output. Open `http://127.0.0.1:4317` manually if needed.
 
-If the port is already in use, close the old LensSort window first. The service is intended for the same computer and should not be exposed to the public internet.
+If the port is already in use, close the old PhotoSort window first. The service is intended for the same computer and should not be exposed to the public internet.
 
 Do not open `index.html` directly. The page needs the local service for folder selection, progress, image previews, and safe file operations.
 
@@ -46,7 +46,7 @@ npm run doctor
 ollama list
 ```
 
-If Ollama is installed but not running, the LensSort launcher tries to start or reuse its local service. It does not stop a service that was already running before LensSort started.
+If Ollama is installed but not running, the PhotoSort launcher tries to start or reuse its local service. It does not stop a service that was already running before PhotoSort started.
 
 ## The computer runs out of memory
 

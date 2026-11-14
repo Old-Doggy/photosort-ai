@@ -59,7 +59,7 @@ test('单张推理超时不关闭后续视觉复核且不换模型', async () =>
   }
   const explainer = await createVisionLanguageExplainer({ ...setup, request, model })
   try {
-    await assert.rejects(explainer.explain(photo), { code: 'LENSSORT_VISION_PHOTO_FAILED' })
+    await assert.rejects(explainer.explain(photo), { code: 'PHOTOSORT_VISION_PHOTO_FAILED' })
     assert.equal(explainer.status.status, 'ready')
     assert.equal((await explainer.explain(photo)).model, model)
   } finally { await explainer.close() }
@@ -79,7 +79,7 @@ test('单图两次无效后明确报错，下一张仍继续视觉复核', async
   const setup = fixture({ invalidResponses: 2 })
   const explainer = await createVisionLanguageExplainer({ ...setup, model })
   try {
-    await assert.rejects(explainer.explain(photo), error => error.code === 'LENSSORT_VISION_OUTPUT_INVALID')
+    await assert.rejects(explainer.explain(photo), error => error.code === 'PHOTOSORT_VISION_OUTPUT_INVALID')
     assert.equal(explainer.status.status, 'ready')
     assert.equal((await explainer.explain(photo)).generated, true)
     assert.equal(setup.calls.filter(call => call.route === '/api/chat').length, 3)
@@ -158,7 +158,7 @@ test('强制9B失败时明确失败，不改用4B或基础分析', async () => {
   const setup = fixture({ fail9b: true })
   const explainer = await createVisionLanguageExplainer({ ...setup, model: 'qwen3.5:9b', force: true })
   try {
-    await assert.rejects(explainer.explain(photo), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
+    await assert.rejects(explainer.explain(photo), { code: 'PHOTOSORT_FORCED_MODEL_FAILED' })
     assert.deepEqual(setup.calls.filter(call => call.route === '/api/chat').map(call => call.payload.model), ['qwen3.5:9b'])
     assert.equal(explainer.status.fallback, false)
     assert.equal(explainer.status.status, 'failed')

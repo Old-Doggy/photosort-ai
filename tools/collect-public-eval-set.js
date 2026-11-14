@@ -18,7 +18,7 @@ const categories = [
 const perClass = boundedCollectionInteger(option('per-class', '20'), 'per-class', 30)
 const maxResults = boundedCollectionInteger(option('max-results', '30'), 'max-results', 30)
 const maxQueries = boundedCollectionInteger(option('max-queries', '2'), 'max-queries', 2)
-const userAgent = 'LensSortAI-public-eval/1.0 (local evaluation; contact unavailable)'
+const userAgent = 'PhotoSortAI-public-eval/1.0 (local evaluation; contact unavailable)'
 
 function option(name, fallback) {
   const prefix = '--' + name + '='

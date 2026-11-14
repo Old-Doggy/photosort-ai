@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { createControlServer } from './control-server.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-web-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-web-'))
 const server = await createControlServer({ root: process.cwd(), controlDir: path.join(workspace, 'control'), port: 0 })
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--disable-gpu', '--disable-software-rasterizer', '--no-sandbox'] })
 const errors = []

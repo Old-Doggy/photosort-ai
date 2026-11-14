@@ -4,11 +4,11 @@ import path from 'node:path'
 import os from 'node:os'
 import { mkdtemp, readFile, writeFile, access } from 'node:fs/promises'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-entry-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-entry-'))
 const stateDir = path.join(workspace, 'state')
 const input = path.join(workspace, 'input')
 const output = path.join(workspace, 'output')
-const child = fork('tools/run-folder-sorter.js', [], { silent: true, env: { ...process.env, LENSSORT_INPUT: input, LENSSORT_OUTPUT: output, LENSSORT_STATE: stateDir, LENSSORT_BACKEND: 'cpu' } })
+const child = fork('tools/run-folder-sorter.js', [], { silent: true, env: { ...process.env, PHOTOSORT_INPUT: input, PHOTOSORT_OUTPUT: output, PHOTOSORT_STATE: stateDir, PHOTOSORT_BACKEND: 'cpu' } })
 const events = []
 let buffer = ''
 let stderr = ''

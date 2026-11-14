@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
 import sharp from 'sharp'
 import { curatePhotos } from './photo-curator.js'
 
-const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-curate-'))
+const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-curate-'))
 const output = path.join(workspace, 'sorted')
 const manifestFile = path.join(output, '精选', 'selection.json')
 await mkdir(output)

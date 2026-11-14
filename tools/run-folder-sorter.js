@@ -1,13 +1,14 @@
+import './runtime-compat.js'
 import path from 'node:path'
 import process from 'node:process'
 import { createPhotoAnalyzer } from './local-photo-analyzer.js'
 import { createFolderSorter } from './folder-sorter.js'
 
 const root = process.cwd()
-const input = path.resolve(process.env.LENSSORT_INPUT ?? path.join(root, 'data/inbox'))
-const output = path.resolve(process.env.LENSSORT_OUTPUT ?? path.join(root, 'data/sorted'))
-const stateDir = path.resolve(process.env.LENSSORT_STATE ?? path.join(root, 'data/service-state'))
-const backend = process.env.LENSSORT_BACKEND ?? 'cpu'
+const input = path.resolve(process.env.PHOTOSORT_INPUT ?? path.join(root, 'data/inbox'))
+const output = path.resolve(process.env.PHOTOSORT_OUTPUT ?? path.join(root, 'data/sorted'))
+const stateDir = path.resolve(process.env.PHOTOSORT_STATE ?? path.join(root, 'data/service-state'))
+const backend = process.env.PHOTOSORT_BACKEND ?? 'cpu'
 const analyzer = await createPhotoAnalyzer(root, backend)
 let sorter
 try { sorter = await createFolderSorter({

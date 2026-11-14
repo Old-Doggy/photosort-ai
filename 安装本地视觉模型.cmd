@@ -15,7 +15,7 @@ if not exist node_modules (
   exit /b 1
 )
 echo.
-echo LensSort AI will install Ollama if it is missing, then download Qwen 3.5 4B.
+echo PhotoSort AI will install Ollama if it is missing, then download Qwen 3.5 4B.
 echo The model may use several GB of disk space. Photos stay on this computer.
 echo.
 choice /C YN /N /M "Continue? [Y/N] "
@@ -28,6 +28,6 @@ if errorlevel 1 (
   exit /b 1
 )
 echo.
-echo Vision model setup complete. Start LensSort with 启动网页控制.cmd.
+echo Vision model setup complete. Start PhotoSort with 启动网页控制.cmd.
 pause
 exit /b 0

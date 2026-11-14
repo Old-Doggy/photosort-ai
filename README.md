@@ -1,12 +1,12 @@
-# LensSort AI
+# PhotoSort AI
 
 <p align="center">
-  <strong>A local photo sorter for people who enjoy taking pictures</strong><br />
+  <strong>Local AI photo classification, with you in control</strong><br />
   Sort the first pass locally. Keep the final say.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Old-Doggy/lenssort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/lenssort-ai/actions/workflows/validate.yml/badge.svg" alt="Build status" /></a>
+  <a href="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml/badge.svg" alt="Build status" /></a>
   <img src="https://img.shields.io/badge/platform-Windows-f59e0b" alt="Windows" />
   <img src="https://img.shields.io/badge/license-MIT-7c3aed" alt="MIT license" />
 </p>
@@ -19,16 +19,16 @@
 </p>
 
 <p align="center">
-  <img src="src/assets/lenssort-cover.svg" alt="LensSort AI local photo sorting page" width="900" />
+  <img src="src/assets/photosort-cover.svg" alt="PhotoSort AI local photo sorting page" width="900" />
 </p>
 
 ## Why I made it
 
 I enjoy taking photos, but sorting them afterwards is the part I keep putting off. After a trip or a photo walk, a few hundred images can sit in one folder for weeks. The first useful step is often simple: separate people, scenery, animals, plants, and the shots that need a closer look.
 
-LensSort is my attempt to make that first pass less tedious. It runs locally, puts the results into copies, and leaves room for me to inspect the photos and correct the labels. I once tried to make it decide which images were “the best,” but that quickly became too dependent on the purpose of a shoot, the memory behind a frame, and personal taste. The current project treats recommendations as a shortlist, while the final choice stays with the photographer.
+PhotoSort is my attempt to make that first pass less tedious. It runs locally, puts the results into copies, and leaves room for me to inspect the photos and correct the labels. I once tried to make it decide which images were “the best,” but that quickly became too dependent on the purpose of a shoot, the memory behind a frame, and personal taste. The current project treats recommendations as a shortlist, while the final choice stays with the photographer.
 
-LensSort works on copies in an output folder. The original folder is left alone, so it is safe to review the result before doing anything else with the photos.
+PhotoSort works on copies in an output folder. The original folder is left alone, so it is safe to review the result before doing anything else with the photos.
 
 ## Privacy first
 
@@ -46,6 +46,7 @@ This public repository contains source code, documentation, and the small resour
 - Scans the selected folder and classifies photos into `Single person`, `Multiple people`, `People + scenery`, `Scenery`, `Animals`, `Plants`, `Other`, or `Needs review`
 - Shows progress while one batch is running, then stops by itself
 - Opens thumbnails and larger previews in the browser
+- Browses larger previews with previous/next buttons, arrow keys, or touch swipes, across pages within the active category or favorites
 - Lets you move an output copy to another category or delete that output copy
 - Reads the current disk state again when you click **Refresh current folder**
 - Offers **Assisted recommendations** as a technical shortcut for review; it does not claim to know your taste
@@ -70,7 +71,7 @@ The script asks whether you want to install the optional vision model. Choose `N
 
 ### 2. Start the browser page
 
-Double-click `启动网页控制.cmd`. Keep the black command window open while using LensSort. It opens the local page automatically; if it does not, open the `http://127.0.0.1:4317` address printed in that window.
+Double-click `启动网页控制.cmd`. Keep the black command window open while using PhotoSort. It opens the local page automatically; if it does not, open the `http://127.0.0.1:4317` address printed in that window.
 
 Do not double-click `index.html`. The browser page needs the local control service for folder access, progress, previews, and corrections.
 

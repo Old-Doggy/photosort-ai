@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
 
-const origin = process.env.LENSSORT_F7_ORIGIN ?? 'http://127.0.0.1:4317'
+const origin = process.env.PHOTOSORT_F7_ORIGIN ?? 'http://127.0.0.1:4317'
 const workspace = await mkdtemp(path.join(process.cwd(), 'data', 'f7-manual-acceptance-'))
 const input = path.join(workspace, 'input')
 const output = path.join(workspace, 'output')
@@ -25,7 +25,7 @@ try {
   await page.getByLabel('推理设备').selectOption('cpu')
   const before = await (await fetch(origin + '/api/status')).json()
   assert.equal(before.phase, 'stopped')
-  const configured = await fetch(origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': before.token }, body: JSON.stringify({ input, output, backend: 'cpu' }) })
+  const configured = await fetch(origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-photosort-token': before.token }, body: JSON.stringify({ input, output, backend: 'cpu' }) })
   assert.equal(configured.status, 200)
   await writeFile(path.join(input, 'before-start.jpg'), sourceBytes)
   await new Promise(resolve => setTimeout(resolve, 4500))

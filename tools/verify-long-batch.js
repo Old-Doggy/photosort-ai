@@ -36,7 +36,7 @@ async function makeUniqueSample(bytes, index) {
     .modulate({ brightness: 0.94 + (index % 13) * 0.01 })
     .jpeg({ quality: 80 + (index % 12) })
     .toBuffer()
-  return Buffer.concat([encoded, Buffer.from('LENS_SORT_STABILITY_' + String(index).padStart(5, '0'))])
+  return Buffer.concat([encoded, Buffer.from('PHOTO_SORT_STABILITY_' + String(index).padStart(5, '0'))])
 }
 
 async function waitForState(stateFile, expected, timeoutMs, peakMemory) {
@@ -81,7 +81,7 @@ const report = {
 }
 
 for (const backend of requestedBackends) {
-  const workspace = await mkdtemp(path.join(os.tmpdir(), 'lenssort-long-batch-'))
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'photosort-long-batch-'))
   const input = path.join(workspace, 'input')
   const output = path.join(workspace, 'output')
   const stateDir = path.join(workspace, 'state')

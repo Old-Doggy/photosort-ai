@@ -75,7 +75,7 @@ test('overlapping favorite writes cannot silently lose a successful update', asy
     const get = async () => (await fetch(server.origin + '/api/status')).json()
     const token = (await get()).token
     const post = (route, body) => fetch(server.origin + route, { method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-lenssort-token': token }, body: JSON.stringify(body) })
+      headers: { 'content-type': 'application/json', 'x-photosort-token': token }, body: JSON.stringify(body) })
     assert.equal((await post('/api/config', { input: fixture.input, output: fixture.output, backend: 'cpu', model: 'off' })).status, 200)
     assert.equal((await post('/api/start', {})).status, 200)
     let status

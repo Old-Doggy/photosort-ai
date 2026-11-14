@@ -1,3 +1,4 @@
+import './runtime-compat.js'
 import process from 'node:process'
 import { spawn } from 'node:child_process'
 import { createControlServer } from './control-server.js'
@@ -7,7 +8,7 @@ import { projectRoot } from './runtime-paths.js'
 const ollama = await ensureOllama()
 let server
 try {
-  server = await createControlServer({ root: projectRoot, controlDir: process.env.LENSSORT_CONTROL_DIR || undefined, port: Number(process.env.LENSSORT_PORT ?? 4317) })
+  server = await createControlServer({ root: projectRoot, controlDir: process.env.PHOTOSORT_CONTROL_DIR || undefined, port: Number(process.env.PHOTOSORT_PORT ?? 4317) })
 } catch (error) {
   await ollama.stop()
   throw error

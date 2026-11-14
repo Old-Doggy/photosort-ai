@@ -1,3 +1,4 @@
+import './runtime-compat.js'
 import { access, rm, writeFile } from 'node:fs/promises'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -29,7 +30,7 @@ export function parseInstallerArgs(argv = process.argv.slice(2)) {
 }
 
 async function findExecutable() {
-  const candidates = [process.env.LENSSORT_OLLAMA_EXE, process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe') : null, process.platform === 'win32' ? path.join(process.env.PROGRAMFILES || '', 'Ollama', 'ollama.exe') : null]
+  const candidates = [process.env.PHOTOSORT_OLLAMA_EXE, process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe') : null, process.platform === 'win32' ? path.join(process.env.PROGRAMFILES || '', 'Ollama', 'ollama.exe') : null]
   for (const candidate of candidates) {
     if (!candidate) continue
     try { await access(candidate); return candidate } catch {}
@@ -43,7 +44,7 @@ async function findExecutable() {
 
 async function downloadOfficialInstaller() {
   if (process.platform !== 'win32') throw new Error('自动安装 Ollama 目前仅支持 Windows；请从 https://ollama.com/download 手动安装')
-  const file = path.join(os.tmpdir(), `LensSort-OllamaSetup-${Date.now()}.exe`)
+  const file = path.join(os.tmpdir(), `PhotoSort-OllamaSetup-${Date.now()}.exe`)
   const response = await fetch(officialInstallerUrl, { signal: AbortSignal.timeout(120000) })
   if (!response.ok) throw new Error(`无法下载官方 Ollama 安装程序（HTTP ${response.status}）`)
   await writeFile(file, Buffer.from(await response.arrayBuffer()))
@@ -65,7 +66,7 @@ async function findExecutableAfterInstall() {
 
 async function installedModels() {
   try {
-    const base = String(process.env.LENSSORT_OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
+    const base = String(process.env.PHOTOSORT_OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
     const response = await fetch(`${base}/api/tags`, { signal: AbortSignal.timeout(5000) })
     if (!response.ok) return []
     const body = await response.json()
@@ -89,8 +90,8 @@ export async function prepareVisionModel({ model = 'qwen3.5:4b', installOllama =
     executable = await findExecutableAfterInstall()
   }
   if (!executable) throw new Error('Ollama 安装后仍未找到 ollama.exe；请重启终端或确认安装完成')
-  const previousExecutable = process.env.LENSSORT_OLLAMA_EXE
-  if (!previousExecutable) process.env.LENSSORT_OLLAMA_EXE = executable
+  const previousExecutable = process.env.PHOTOSORT_OLLAMA_EXE
+  if (!previousExecutable) process.env.PHOTOSORT_OLLAMA_EXE = executable
   let lifecycle
   try {
     lifecycle = await ensureOllama()
@@ -102,14 +103,14 @@ export async function prepareVisionModel({ model = 'qwen3.5:4b', installOllama =
     return { model: selected, installed: true, service: lifecycle.status, executable }
   } finally {
     if (lifecycle && !keepService) await lifecycle.stop()
-    if (!previousExecutable) delete process.env.LENSSORT_OLLAMA_EXE
+    if (!previousExecutable) delete process.env.PHOTOSORT_OLLAMA_EXE
   }
 }
 
 export async function main(argv = process.argv.slice(2)) {
   const options = parseInstallerArgs(argv)
   const profile = supportedVisionModels[options.model]
-  console.log(`LensSort AI 本地视觉模型准备器\n模型：${profile.label}（${options.model}）\n用途：${profile.recommendation}\n`)
+  console.log(`PhotoSort AI 本地视觉模型准备器\n模型：${profile.label}（${options.model}）\n用途：${profile.recommendation}\n`)
   const result = await prepareVisionModel(options)
   console.log(`准备完成：${result.model} 已安装。现在运行“启动网页控制.cmd”即可在网页中选择它。`)
   return result
