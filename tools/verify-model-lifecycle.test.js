@@ -50,6 +50,17 @@ test('冷启动预加载与图片推理使用独立时限并报告阶段', async
     assert.ok(stages.includes('loading-model'))
   } finally { await explainer.close() }
 })
+test('explicit warmup loads the model before the first photo and is safe to repeat', async () => {
+  const setup = fixture()
+  const explainer = await createVisionLanguageExplainer({ ...setup, model })
+  try {
+    assert.equal(await explainer.warmup(), true)
+    assert.equal(setup.calls.filter(call => call.route === '/api/generate' && call.payload.keep_alive !== 0).length, 1)
+    assert.equal(explainer.status.status, 'ready')
+    assert.equal(await explainer.warmup(), true)
+    assert.equal(setup.calls.filter(call => call.route === '/api/generate' && call.payload.keep_alive !== 0).length, 1)
+  } finally { await explainer.close() }
+})
 test('单张推理超时不关闭后续视觉复核且不换模型', async () => {
   const setup = fixture({ existing: true })
   let first = true

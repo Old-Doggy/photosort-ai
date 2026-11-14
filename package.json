@@ -13,12 +13,17 @@
   },
   "type": "module",
   "engines": { "node": ">=22.12.0" },
+  "overrides": {
+    "sharp": "^0.35.5"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "setup:models": "node tools/setup-model-assets.js",
+    "setup:semantic": "node tools/setup-semantic-model.js",
+    "setup:raw": "node tools/setup-raw.js",
     "setup:vision": "node tools/setup-vision-model.js --install-ollama",
     "verify:models": "node tools/verify-model-assets.js",
     "doctor": "node tools/doctor.js",
@@ -31,6 +36,7 @@
     "start:control": "node tools/start-control-server.js",
     "verify:control": "node tools/verify-control-api.js",
     "verify:quick-actions": "node tools/verify-quick-actions.js",
+    "verify:workspace": "node tools/verify-workspace-week1.js",
     "build:p1-failure-set": "node tools/build-p1-failure-set.js",
     "benchmark:p2-aesthetic": "node tools/benchmark-p2-aesthetic.js",
     "report:p2-model-selection": "node tools/build-p2-model-selection-report.js",
@@ -61,13 +67,13 @@
     "verify:startup": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/verify-startup.ps1"
   },
   "dependencies": {
+    "@napi-rs/image": "^1.16.0",
     "@huggingface/transformers": "^3.8.1",
     "@mediapipe/tasks-vision": "^1.0.1",
     "onnxruntime-node": "^1.21.0",
-    "playwright": "^1.63.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
@@ -75,7 +81,8 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "playwright": "^1.63.0",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.3"
   }
 }

@@ -1,9 +1,10 @@
 import path from 'node:path'
 import { copyFile, mkdir, readFile, unlink } from 'node:fs/promises'
 import { writeAtomicJson } from './atomic-state.js'
+import { reviewCategories, reviewCategorySet } from './review-categories.js'
 
-export const reviewCategories = ['单人', '多人', '人物与风景', '风景', '动物', '植物', '其他', '待确认']
-const categorySet = new Set(reviewCategories)
+export { reviewCategories }
+const categorySet = reviewCategorySet
 const manifestRelative = path.join('artifacts', 'open-images-download-manifest.json')
 const reviewRelative = path.join('artifacts', 'open-images-human-review.json')
 const labeledRelative = path.join('data', 'eval', 'labeled')
@@ -27,7 +28,7 @@ async function readJson(file, fallback) {
 
 export async function readPublicReview(root) {
   const manifest = await readJson(resolveProjectPath(root, manifestRelative), null)
-  if (!manifest || !Array.isArray(manifest.records)) throw new Error('Public review download manifest is missing or invalid')
+  if (!manifest || !Array.isArray(manifest.records)) return { manifest: { status: 'empty' }, review: { reviews: {} }, records: [] }
   const review = await readJson(resolveProjectPath(root, reviewRelative), { version: 1, reviews: {} })
   if (!review.reviews || typeof review.reviews !== 'object') throw new Error('Public review state is invalid')
   const records = manifest.records.filter(record => record.downloadStatus === 'downloaded' && typeof record.imageId === 'string' && typeof record.localPath === 'string')
@@ -40,7 +41,7 @@ export function reviewStatus(bundle) {
     return { imageId: record.imageId, candidateLabel: record.candidateLabel, candidateScore: record.candidateScore, sourceLabelNames: record.sourceLabelNames ?? [], personBoxCount: record.personBoxCount ?? 0, personGroupBox: record.personGroupBox === true, mappingReason: record.mappingReason ?? '', sourcePageUrl: record.sourcePageUrl ?? null, license: record.license ?? null, humanLabel: saved?.label ?? null, reviewedAt: saved?.reviewedAt ?? null }
   })
   const reviewed = records.filter(record => record.humanLabel !== null).length
-  return { status: bundle.manifest.status, total: records.length, reviewed, pending: records.length - reviewed, records }
+  return { status: bundle.manifest.status ?? 'empty', categories: reviewCategories, total: records.length, reviewed, pending: records.length - reviewed, records }
 }
 
 function labeledPath(root, label, imageId, extension) {

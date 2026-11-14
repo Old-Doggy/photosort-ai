@@ -31,6 +31,8 @@ for (const record of downloaded) {
   }
 }
 
+if (downloaded.length === 0) missingFields.push({ imageId: null, field: 'downloadedRecords' })
+if (hashes.size !== downloaded.length) missingFields.push({ imageId: null, field: 'uniqueSha256' })
 for (const category of reviewCategories) await mkdir(path.join(labeledRoot, category), { recursive: true })
 
 const state = bundle.review

@@ -50,8 +50,10 @@ This public repository contains source code, documentation, and the small resour
 - Reads the current disk state again when you click **Refresh current folder**
 - Offers **Assisted recommendations** as a technical shortcut for review; it does not claim to know your taste
 - Can use an optional local vision model to write a short image explanation
+- Reads jpg/jpeg/png/webp/tif/tiff/avif/heic/heif and common RAW (cr2/cr3/nef/arw/dng/orf/rw2/raf/pef); HEIC needs the Windows HEIF/HEVC extensions, RAW needs `npm run setup:raw` (rawpy), and both fail with an explicit reason when unavailable
+- Optional SigLIP2 scene semantics: `npm run setup:semantic`; the app falls back to CLIP when it is not installed
 
-Basic classification works without Ollama. Photos stay on the computer and are not sent to a cloud image API.
+Basic classification works without Ollama. Photos stay on the computer and are not sent to a cloud image API. Visual review defaults to a balanced mode that only calls the local VLM for uncertain, conflicting, or low-confidence photos; full review is available in Settings.
 
 ## Quick start on Windows
 
@@ -79,10 +81,10 @@ Do not double-click `index.html`. The browser page needs the local control servi
 1. Choose the photo source folder
 2. Choose a separate output folder
 3. Pick `自动选择` (`Auto`) or a detected CPU, GPU, or NPU device
-4. Click `一键筛选` (`Start sorting`)
-5. Wait for `分类完成，已自动停止` (`Sorting complete`)
+4. Click `开始分类` (`Start classification`)
+5. Wait for `分类完成，已自动停止` (`Classification complete`)
 
-The batch processes the files that are present when it starts. It does not keep watching the folder after completion. Put new photos in the folder and click **一键筛选** again when you want another batch.
+The batch processes the files that are present when it starts. It does not keep watching the folder after completion. Put new photos in the folder and click **开始分类** again when you want another batch.
 
 ### 4. Review the result
 

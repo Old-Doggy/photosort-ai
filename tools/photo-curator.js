@@ -4,6 +4,7 @@ import { lstat, mkdir, readFile, realpath, rename, writeFile } from 'node:fs/pro
 import sharp from 'sharp'
 import { rankCurationRecords } from './curation-ranking.js'
 import { groupCurationCandidates } from './curation-groups.js'
+import { normalizeImageBytes } from './image-input.js'
 
 const curatedFolderName = '精选'
 
@@ -14,8 +15,9 @@ const within = (parent, child) => {
 
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 
-async function visualFingerprint(bytes) {
-  const input = sharp(bytes, { limitInputPixels: 80_000_000 }).rotate()
+async function visualFingerprint(bytes, fileName) {
+  const normalized = await normalizeImageBytes(bytes, { fileName })
+  const input = sharp(normalized, { limitInputPixels: 80_000_000 }).rotate()
   const { data: colorImage, info } = await input.clone().resize(24, 24, { fit: 'inside' }).removeAlpha().toColourspace('srgb').raw().toBuffer({ resolveWithObject: true })
   const color = [0, 1, 2].map(channel => {
     let total = 0
@@ -53,7 +55,7 @@ export async function curatePhotos({ records, output, manifestFile, selectionRat
   for (const candidate of candidates) {
     const { record } = candidate
     const { source, bytes, hash } = await validatePhotoSource(record, output)
-    if (!unique.has(hash)) unique.set(hash, { ...candidate, source, hash, ...await visualFingerprint(bytes) })
+    if (!unique.has(hash)) unique.set(hash, { ...candidate, source, hash, ...await visualFingerprint(bytes, record.name) })
   }
   const diversity = groupCurationCandidates([...unique.values()])
   const ratio = Math.max(0.05, Math.min(0.5, Number(selectionRatio) || 0.3))

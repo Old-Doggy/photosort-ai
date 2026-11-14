@@ -14,14 +14,16 @@ try {
   const page = await browser.newPage({ viewport: { width: 1360, height: 1000 } })
   page.on('pageerror', error => errors.push(error.message))
   await page.goto(server.origin)
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByLabel('照片来源文件夹').fill(path.join(workspace, 'input'))
   await page.getByLabel('分类结果文件夹').fill(path.join(workspace, 'output'))
   await page.getByLabel('推理设备').selectOption('cpu')
+  await page.getByRole('button', { name: '保存并关闭', exact: true }).click()
   const filename = '人工修改分类-测试.jpg'
   await mkdir(path.join(workspace, 'input'), { recursive: true })
   await mkdir(path.join(workspace, 'output'), { recursive: true })
   await writeFile(path.join(workspace, 'input', filename), await readFile('data/eval/photos/portrait.jpg'))
-  await page.getByRole('button', { name: /一键筛选/ }).click()
+  await page.getByRole('button', { name: /开始分类/ }).click()
   await page.getByRole('heading', { name: filename, exact: true }).waitFor({ timeout: 30000 })
   const card = page.locator('article').filter({ has: page.getByRole('heading', { name: filename, exact: true }) })
   await card.getByRole('button', { name: '查看详情', exact: true }).click()
@@ -35,6 +37,10 @@ try {
   assert.equal(await page.getByRole('dialog').getByLabel('修改照片分类').inputValue(), '风景')
   checks.push('category selector confirms a manual correction and shows the badge')
 
+  await page.waitForFunction(async expected => {
+    const next = await (await fetch('/api/status', { cache: 'no-store' })).json()
+    return next.records.find(item => item.name === expected)?.category === '风景'
+  }, filename)
   const status = await (await fetch(server.origin + '/api/status')).json()
   const record = status.records.find(item => item.name === filename)
   assert.equal(record.category, '风景')

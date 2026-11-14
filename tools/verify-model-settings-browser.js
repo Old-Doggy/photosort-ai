@@ -31,6 +31,7 @@ try {
   } }))
   page.on('pageerror', error => report.errors.push(error.message))
   await page.goto(server.origin)
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByRole('button', { name: /选择 Qwen 3.5 9B/ }).waitFor()
   const adviceButtons = page.locator('.model-advice-option > button')
   assert.ok(await adviceButtons.count() >= 1)
@@ -49,6 +50,7 @@ try {
   await page.getByText('模型选择已保存 · 下一次筛选生效', { exact: true }).waitFor()
   assert.equal(JSON.parse(await readFile(path.join(controlDir, 'config.json'), 'utf8')).model, 'off')
   await page.reload()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByRole('button', { name: /选择 基础分析/ }).waitFor()
   await page.getByRole('button', { name: /选择 基础分析/ }).evaluate(button => { if (button.getAttribute('aria-pressed') !== 'true') throw new Error('基础分析按钮没有保留选中状态') })
   report.checks.push('网页使用按钮切换模型，刷新后保留选择且不再显示视觉模型下拉框')
@@ -63,6 +65,7 @@ try {
   await page.getByRole('button', { name: /关闭强制使用/ }).waitFor()
   assert.equal(JSON.parse(await readFile(path.join(controlDir, 'config.json'), 'utf8')).forceModel, true)
   await page.reload()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByRole('button', { name: /关闭强制使用/ }).waitFor()
   await page.getByRole('button', { name: /选择 基础分析/ }).click()
   await page.getByText('模型选择已保存 · 下一次筛选生效', { exact: true }).waitFor()
@@ -71,7 +74,8 @@ try {
   report.checks.push('资源不足仍可选择9B；强制风险确认可取消/接受；刷新保留，切换模型清除强制')
   await page.getByLabel('照片来源文件夹').fill(input)
   await page.getByLabel('分类结果文件夹').fill(output)
-  await page.getByRole('button', { name: /一键筛选/ }).click()
+  await page.getByRole('button', { name: '保存并关闭', exact: true }).click()
+  await page.getByRole('button', { name: /开始分类/ }).click()
   await page.waitForFunction(async () => {
     const status = await (await fetch('/api/status')).json()
     return status.phase === 'stopped' && status.progress.phase === 'finished'
@@ -80,6 +84,7 @@ try {
   report.checks.push('网页实际将基础模式传入分析器，有限批次自动停止')
   await page.screenshot({ path: path.join(workspace, 'desktop.png'), fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByRole('button', { name: '选择 自动安全选择（推荐）', exact: true }).waitFor({ state: 'visible' })
   await page.waitForFunction(() => !(document.querySelector('[aria-label="选择 自动安全选择（推荐）"]')?.disabled))
   for (const button of await adviceButtons.all()) {

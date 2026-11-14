@@ -22,9 +22,10 @@ test('HTTP batch auto stops, releases analyzer and preserves progress', async ()
     close: async () => { closed++ },
   }) })
   const get = async () => fetch(server.origin + '/api/status').then(response => response.json())
-  const token = (await get()).token
+  const initialResponse = await fetch(server.origin + '/api/status')
+  const cookie = initialResponse.headers.get('set-cookie').split(';')[0]
   const post = async (route, body = {}) => {
-    const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': token }, body: JSON.stringify(body) })
+    const response = await fetch(server.origin + route, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify(body) })
     assert.equal(response.status, 200, await response.text())
   }
   const waitStopped = async () => {

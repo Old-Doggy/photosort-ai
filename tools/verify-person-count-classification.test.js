@@ -46,6 +46,21 @@ test('overlapping boxes for one person do not inflate the people count', () => {
   assert.equal(classifyFolderCategory(candidates, { faceCount: 0 }, { person }).category, '单人')
 })
 
+test('a head box contained by a body box does not become a second person', () => {
+  const person = {
+    status: 'succeeded',
+    maxScore: 0.91,
+    candidateCount: 2,
+    imageWidth: 1200,
+    imageHeight: 800,
+    boxes: [
+      { score: 0.91, x: 80, y: 120, width: 180, height: 420, areaRatio: 0.07875 },
+      { score: 0.82, x: 140, y: 130, width: 60, height: 70, areaRatio: 0.004375 },
+    ],
+  }
+  assert.equal(classifyFolderCategory(candidates, { faceCount: 0 }, { person }).category, '单人')
+})
+
 test('weak or incomplete body evidence remains pending without faces', () => {
   const person = {
     status: 'succeeded',

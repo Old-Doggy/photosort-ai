@@ -23,9 +23,11 @@ try {
   await page.getByLabel('照片来源文件夹').fill(input)
   await page.getByLabel('分类结果文件夹').fill(output)
   await page.getByLabel('推理设备').selectOption('cpu')
-  const before = await (await fetch(origin + '/api/status')).json()
+  const beforeResponse = await fetch(origin + '/api/status')
+  const beforeCookie = beforeResponse.headers.get('set-cookie').split(';')[0]
+  const before = await beforeResponse.json()
   assert.equal(before.phase, 'stopped')
-  const configured = await fetch(origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': before.token }, body: JSON.stringify({ input, output, backend: 'cpu' }) })
+  const configured = await fetch(origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', cookie: beforeCookie }, body: JSON.stringify({ input, output, backend: 'cpu' }) })
   assert.equal(configured.status, 200)
   await writeFile(path.join(input, 'before-start.jpg'), sourceBytes)
   await new Promise(resolve => setTimeout(resolve, 4500))

@@ -1,8 +1,9 @@
 import path from 'node:path'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { createPhotoAnalyzer } from './local-photo-analyzer.js'
+import { reviewCategories } from './review-categories.js'
 
-const categories = ['单人', '多人', '人物与风景', '风景', '其他', '待确认']
+const categories = [...reviewCategories]
 const categorySet = new Set(categories)
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif'])
 const root = process.cwd()
@@ -57,7 +58,9 @@ function metricsFor(matrix, label, support) {
 function summarize(records) {
   const matrix = createMatrix()
   for (const record of records) {
-    if (record.ok && categorySet.has(record.predicted)) matrix[record.actual][record.predicted]++
+    if (!record.ok) continue
+    if (!categorySet.has(record.predicted)) throw new Error(`评估出现未登记预测：${record.predicted}`)
+    matrix[record.actual][record.predicted]++
   }
   const supports = Object.fromEntries(categories.map(category => [category, records.filter(record => record.actual === category).length]))
   const perClass = Object.fromEntries(categories.map(category => [category, metricsFor(matrix, category, supports[category])] ))

@@ -1,5 +1,6 @@
 const MODEL_PROFILES = Object.freeze({
   off: { id: 'off', label: '基础分析（不加载视觉大模型）', model: null, minRamGiB: 0, minVramGiB: 0, estimatedVramGiB: 0, speed: '最快', advice: '适合低配置或同时运行其他软件；没有大模型自然语言复核。' },
+  'qwen3.5:2b': { id: 'qwen3.5:2b', label: 'Qwen 3.5 2B（轻量）', model: 'qwen3.5:2b', minRamGiB: 6, minVramGiB: 4, estimatedVramGiB: 2.5, speed: '最快', advice: '适合低配或只想快速看图解释的电脑；复杂主体和多人照片建议改用4B复核。' },
   'gemma3:4b': { id: 'gemma3:4b', label: 'Gemma 3 4B（兼容基线）', model: 'gemma3:4b', minRamGiB: 8, minVramGiB: 6, estimatedVramGiB: 4, speed: '较快', advice: '适合多数电脑；用于兼容性基线，中文描述稳定性需以本机为准。' },
   'qwen3.5:4b': { id: 'qwen3.5:4b', label: 'Qwen 3.5 4B（推荐平衡）', model: 'qwen3.5:4b', minRamGiB: 8, minVramGiB: 6, estimatedVramGiB: 4, speed: '较快', advice: '推荐默认选择；在速度、资源和图像语义之间取平衡。' },
   'qwen3.5:9b': { id: 'qwen3.5:9b', label: 'Qwen 3.5 9B（精度优先）', model: 'qwen3.5:9b', minRamGiB: 12, minVramGiB: 9, estimatedVramGiB: 8, speed: '较慢', advice: '只建议内存32GB、独显空闲约9GiB以上时主动选择；不作为低配默认。' },
@@ -36,7 +37,7 @@ export function chooseSafeModel({ requested = 'auto', installed = [], installedD
   const wantedProfile = calibratedProfile(getModelProfile(wanted), installedDetails)
   if (force && wantedProfile.id !== 'off' && available.has(wantedProfile.id)) return { selected: wantedProfile.id, requested: wanted, forced: true, fallback: false, reason: '用户已确认强制使用，忽略资源建议；运行失败时不会自动换模型' }
   if (canRun(wantedProfile)) return { selected: wantedProfile.id, requested: wanted, fallback: false, reason: '资源与安装状态满足策略' }
-  for (const candidate of ['qwen3.5:4b', 'gemma3:4b', 'off']) {
+  for (const candidate of ['qwen3.5:4b', 'qwen3.5:2b', 'gemma3:4b', 'off']) {
     const profile = getModelProfile(candidate)
     if (canRun(profile)) return { selected: profile.id, requested: wanted, fallback: true, reason: wantedProfile.id === 'off' ? '已选择基础分析' : '所选模型未安装或当前资源不足，已安全降级' }
   }

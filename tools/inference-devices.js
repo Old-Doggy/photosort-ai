@@ -23,7 +23,11 @@ async function npuReady(root) {
   try {
     const { stdout } = await execute(python, [path.join(root, 'tools/winml-discover.py')], { windowsHide: true, timeout: 30000 })
     const providers = JSON.parse(stdout)
-    return providers.some(provider => provider.name === 'VitisAIExecutionProvider' && (String(provider.state) === '1' || /ready/i.test(String(provider.state))))
+    return providers.some(provider => {
+      if (provider.name !== 'VitisAIExecutionProvider') return false
+      const state = Number(provider.state)
+      return Number.isInteger(state) ? state === 0 : /ready/i.test(String(provider.state))
+    })
   } catch {
     return false
   }

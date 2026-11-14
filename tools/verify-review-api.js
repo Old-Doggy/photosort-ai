@@ -18,11 +18,14 @@ await writeFile(path.join(fixture, 'artifacts/open-images-download-manifest.json
 const server = await createControlServer({ root: fixture, controlDir: path.join(fixture, 'control'), port: 0 })
 const origin = server.origin
 try {
-  const status = await (await fetch(origin + '/api/status')).json()
+  const statusResponse = await fetch(origin + '/api/status')
+  const cookie = statusResponse.headers.get('set-cookie').split(';')[0]
+  const status = await statusResponse.json()
+  assert.equal('token' in status, false)
   const review = await (await fetch(origin + '/api/review')).json()
   assert.equal(review.total, 1)
   assert.equal((await fetch(origin + '/api/review/thumbnail/' + record.imageId)).status, 200)
-  const headers = { 'content-type': 'application/json', 'x-lenssort-token': status.token, origin }
+  const headers = { 'content-type': 'application/json', cookie, origin }
   const invalid = await fetch(origin + '/api/review', { method: 'POST', headers, body: JSON.stringify({ imageId: record.imageId, label: 'invalid' }) })
   assert.equal(invalid.status, 400)
   const saved = await fetch(origin + '/api/review', { method: 'POST', headers, body: JSON.stringify({ imageId: record.imageId, label: '风景' }) })

@@ -25,7 +25,7 @@ try {
   assert.ok(['started', 'reused'].includes(service.status), service.message)
   analyzer = await createPhotoAnalyzer(root, 'npu', report.model)
   assert.equal(analyzer.visionModelStatus.model, report.model, '评测禁止静默替换模型或基础降级')
-  for (const [index, sample] of samples.entries()) {
+  for (const sample of samples) {
     const bytes = await readFile(path.resolve(root, sample.localPath))
     assert.equal(createHash('sha256').update(bytes).digest('hex'), sample.sha256)
     const name = path.basename(sample.localPath)

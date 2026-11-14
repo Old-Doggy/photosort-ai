@@ -4,10 +4,10 @@ import { getReliablePersonCount } from './folder-classification.js'
 const numberOf = value => Number.isFinite(Number(value)) ? Number(value) : 0
 const truth = value => value === true || value === 1 || value === 'true'
 
-export function getVisionLanguageTrigger({ classification = {}, candidates = [], faces = {}, person = {}, scene = {} } = {}) {
-  const mode = String(process.env.LENSSORT_VLM_MODE || 'precision').toLowerCase()
+export function getVisionLanguageTrigger({ classification = {}, candidates = [], faces = {}, person = {}, scene = {} } = {}, { mode: requestedMode } = {}) {
+  const mode = String(requestedMode ?? process.env.LENSSORT_VLM_MODE ?? 'balanced').toLowerCase()
   if (mode === 'off') return { run: false, reason: '视觉复核已关闭' }
-  if (mode !== 'uncertain') return { run: true, reason: '精度优先模式：进行全量视觉复核' }
+  if (mode === 'precision') return { run: true, reason: '精细模式：进行全量视觉复核' }
   const topScore = numberOf(candidates[0]?.score)
   const personCandidate = person.status === 'succeeded' && numberOf(person.candidateCount) > 0 && numberOf(person.maxScore) >= 0.32
   if (classification.category === '待确认') return { run: true, reason: '快速分类结果为待确认' }
@@ -48,6 +48,8 @@ export function mergeVisionReviews(first, second) {
 }
 
 export function applyVisionLanguageCategory(classification, vision, { faces = {}, person = {} } = {}) {
+  faces = faces ?? {}
+  person = person ?? {}
   const category = categories.has(vision?.categoryCandidate) ? vision.categoryCandidate : null
   if (vision?.generated === false || !category) return { classification, applied: false, reason: '视觉模型输出不可用或不确定' }
   if (vision?.reviewConflict || vision?.uncertain === true) {

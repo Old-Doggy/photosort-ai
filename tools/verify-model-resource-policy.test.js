@@ -17,6 +17,8 @@ test('安装状态和实时空闲决定回退，不看总显存', () => {
   assert.equal(chooseSafeModel({ requested: 'qwen3.5:9b', installed, resources: { freeRamGiB: 12, freeVramGiB: 7 } }).selected, 'qwen3.5:4b')
   assert.equal(chooseSafeModel({ installed: ['gemma3:4b'], resources }).selected, 'gemma3:4b')
   assert.equal(chooseSafeModel({ installed: ['qwen3.5:9b'], resources }).selected, 'off')
+  assert.equal(chooseSafeModel({ installed: ['qwen3.5:2b'], resources: { freeRamGiB: 8, freeVramGiB: 5 } }).selected, 'qwen3.5:2b')
+  assert.equal(modelProfiles().find(item => item.id === 'qwen3.5:2b').estimatedVramGiB, 2.5)
 })
 test('已驻留模型显存不重复计算，但空闲安全余量仍须保留', () => {
   const resident = [{ name: 'qwen3.5:4b', size_vram: 3 * 1024 ** 3 }]

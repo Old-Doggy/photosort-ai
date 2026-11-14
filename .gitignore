@@ -45,6 +45,9 @@ public/models/*
 !public/models/README.md
 data/inbox/
 data/sorted/
+data/eval/raw/
+!data/eval/raw/README.md
+data/eval/public-coco/
 data/service-state/
 .venv-winml/
 data/npu-cache/
@@ -67,3 +70,4 @@ docs/environment.md
 docs/frontend-baseline-phase*.md
 docs/frontend-phase[1-8]-*.md
 docs/frontend-redesign-plan-final.md
+docs/workspace-review-*.md

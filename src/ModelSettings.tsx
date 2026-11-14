@@ -8,7 +8,7 @@ type ModelInfo = {
   recommendation: { selected: string; reason: string; fallback: boolean }
 }
 
-export default function ModelSettings({ value, force, disabled, onChange, onForce }: { value: string; force: boolean; disabled: boolean; onChange: (model: string) => void; onForce: () => void }) {
+export default function ModelSettings({ value, visionMode, semanticModel, force, disabled, onChange, onVisionMode, onSemanticModel, onForce }: { value: string; visionMode: string; semanticModel: string; force: boolean; disabled: boolean; onChange: (model: string) => void; onVisionMode: (mode: string) => void; onSemanticModel: (model: string) => void; onForce: () => void }) {
   const [info, setInfo] = useState<ModelInfo | null>(null)
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
@@ -39,11 +39,17 @@ export default function ModelSettings({ value, force, disabled, onChange, onForc
   const advice = (item: ModelOption) => `${item.advice}${item.id === 'off' ? '' : ` 建议至少空闲内存 ${item.minRamGiB} GiB、独立显存 ${item.minVramGiB} GiB；速度：${item.speed ?? '以本机实测为准'}`}${item.installed ? '' : ' 本机尚未安装，不能直接启用；应用不会自动下载'}`
   return <section className="model-settings" aria-label="模型与资源">
     <div className="model-settings-title"><div><strong>选一个适合电脑的模型</strong><p className="two-line-copy"><span>按钮旁的提示说明适合的电脑和速度</span><span>选择后自动保存，每批结束释放本批加载的模型</span></p></div><button type="button" disabled={disabled} onClick={() => setRevision(current => current + 1)}>更新资源</button></div>
+    <div className="vision-mode-settings" aria-label="视觉复核策略"><div className="vision-mode-heading"><strong>视觉复核策略</strong><span>关闭最快；仅疑难推荐；全量最慢但覆盖每张照片</span></div><div className="vision-mode-options">{[
+      { id: 'off', label: '关闭', hint: '只用快速分类' },
+      { id: 'balanced', label: '仅疑难（推荐）', hint: '待确认、冲突和低置信才复核' },
+      { id: 'precision', label: '全量', hint: '每张都调用视觉模型' },
+    ].map(mode => <button type="button" key={mode.id} disabled={disabled} aria-pressed={visionMode === mode.id} className={visionMode === mode.id ? 'active' : ''} onClick={() => onVisionMode(mode.id)}><strong>{mode.label}</strong><span>{mode.hint}</span></button>)}</div></div>
+    <label className="semantic-model-setting">基础语义模型<select aria-label="基础语义模型" value={semanticModel} disabled={disabled} onChange={event => onSemanticModel(event.target.value)}><option value="auto">自动 · 优先 SigLIP2</option><option value="siglip2">SigLIP2（需额外安装）</option><option value="clip">CLIP 兼容基线</option></select><span>只影响场景语义辅助；未安装 SigLIP2 时“自动”回退 CLIP</span></label>
     <div className={info ? `model-service-state ${serviceAvailable ? 'available' : 'unavailable'}` : 'model-service-state checking'} role="status"><span className="model-service-dot" aria-hidden="true" /><div><strong>{info?.serviceMessage ?? '正在检查本地视觉模型服务'}</strong><span>{serviceAvailable ? '自然语言解释可按选择的模型运行' : '基础分类不依赖 Ollama；服务未启动时仍可完成分类'}</span></div></div>
     <div className="model-advice-options" aria-label="模型选择建议">
       <div className="model-advice-option" onFocusCapture={() => setOpenTip('auto')} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenTip(null) }}>
         <button type="button" disabled={disabled} aria-label="选择 自动安全选择（推荐）" aria-pressed={value === 'auto'} aria-describedby="model-tip-auto" onClick={() => onChange('auto')}>自动安全选择<span aria-hidden="true"> ⓘ</span></button>
-        <span className={openTip === 'auto' ? 'model-choice-tooltip two-line-copy is-open' : 'model-choice-tooltip two-line-copy'} role="tooltip" id="model-tip-auto"><span>推荐日常使用：优先选择本机已安装的4B模型</span><span>资源不足时使用基础分析，不自动加载9B</span></span>
+        <span className={openTip === 'auto' ? 'model-choice-tooltip two-line-copy is-open' : 'model-choice-tooltip two-line-copy'} role="tooltip" id="model-tip-auto"><span>推荐日常使用：优先4B，资源不足时用2B</span><span>不会自动加载9B；只复核疑难照片时选择“仅疑难”</span></span>
       </div>
       {info?.options.map(item => <div className="model-advice-option" key={item.id} onFocusCapture={() => setOpenTip(item.id)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenTip(null) }}>
         <button type="button" disabled={disabled} aria-disabled={disabled || !item.installed} aria-label={'选择 ' + item.label} aria-pressed={value === item.id} aria-describedby={'model-tip-' + item.id.replaceAll(':', '-')} onClick={() => { if (!disabled && item.installed) onChange(item.id) }}>
