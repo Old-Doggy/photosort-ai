@@ -18,10 +18,10 @@ Do not open `index.html` directly. The browser page uses the local service for f
 
 ## Sort a folder
 
-1. Click **编辑设置** in the run-configuration card and select a source folder and a separate output folder
+1. Select a source folder and a separate output folder
 2. Leave the device on automatic selection for the first run
 3. Choose Basic analysis unless you have installed a local vision model
-4. Click **开始分类**
+4. Click **一键筛选**
 5. Wait for **分类完成，已自动停止**
 
 Each batch handles the files present when it starts. New files added later wait for the next click. The app copies results into category folders and leaves the source photos unchanged.
@@ -30,19 +30,9 @@ Each batch handles the files present when it starts. New files added later wait 
 
 Use the category tabs to browse. Click **查看详情** for a larger preview and the image explanation. Use **修改分类** when a result is wrong; only the output copy is moved. **删除分类副本** removes the output copy after confirmation and keeps the source photo.
 
-After changing files in File Explorer, click **刷新** so the page reflects the current disk state.
-
-Star photos to collect them in **收藏**; the default sort places favorites first. The list shows 60 photos per page, with 30 and 120 available in the footer. Search by filename or explanation, or change the sort order.
-
-Select cards for batch correction. The Undo button is offered for 10 seconds; if restoration fails, remaining items stay available for retry. **待确认** opens a review queue with number keys 1–8, arrow navigation, and F to favorite. **相似组** compares candidate matches using paginated thumbnails. **导出清单** downloads a CSV classification list, not photo files or private absolute paths.
+After changing files in File Explorer, click **刷新当前文件夹** so the page reflects the current disk state.
 
 **辅助推荐** is optional. It is a technical shortlist for review, not a promise that the selected photos match your personal taste.
-
-## Optional formats and scene semantics
-
-HEIC/HEIF decoding needs the Windows HEIF/HEVC codecs. For RAW files, install Python 3.11 or newer and run `npm run setup:raw`. Use the same Python interpreter for setup and runtime; set `LENSSORT_RAW_PYTHON` to its full path if necessary. Camera support depends on LibRaw. Output copies preserve the original bytes.
-
-`npm run setup:semantic` downloads roughly 400 MB of SigLIP2 assets. Auto mode uses them when installed and otherwise uses CLIP. This optional scene signal does not guarantee improvement in every category; inspect complex photos manually.
 
 ## Optional local image explanations
 

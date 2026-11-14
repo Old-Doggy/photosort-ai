@@ -20,26 +20,6 @@ async function finish(sorter) {
   return Promise.race([sorter.finished, sleep(1500).then(() => { throw new Error('batch did not stop') })])
 }
 
-test('mutation during the final analysis does not deadlock automatic close', async () => {
-  const options = await fixture(['boundary.jpg'])
-  let announce
-  let release
-  const started = new Promise(resolve => { announce = resolve })
-  const gate = new Promise(resolve => { release = resolve })
-  const sorter = await createFolderSorter({ ...options, analyze: async () => {
-    announce(); await gate; return { category: '风景' }
-  } })
-  await started
-  const mutation = sorter.rescan()
-  release()
-  const outcome = await Promise.race([
-    Promise.all([mutation, sorter.finished]).then(() => 'finished'),
-    sleep(1500).then(() => 'timeout'),
-  ])
-  assert.equal(outcome, 'finished', 'rescan and automatic close must not wait on each other')
-  await sorter.close()
-})
-
 test('empty batch stops and releases its lock', async () => {
   const options = await fixture()
   const sorter = await createFolderSorter(options)

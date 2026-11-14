@@ -61,18 +61,11 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       status = { ...status, status: 'unavailable', message: `视觉模型不可用：${error.message}；使用基础分析。` }
     }
   }
-  const warmup = async () => {
-    if (closed || selectedModel === 'off') return false
+  const explainOnce = async (bytes, { review = false } = {}) => {
     const [available, resident] = await Promise.all([resources(), runningModels()])
-    if (available.freeRamGiB < 3 || (!force && available.freeVramGiB < 0.75)) {
-      status = { ...status, status: force ? 'failed' : 'unavailable', message: '资源安全保护：空闲内存低于3GiB或显存余量过低，本批改用基础分析。' }
-      throw new Error('资源安全保护：空闲内存低于3GiB或显存余量过低，停止请求而非换模型')
-    }
+    if (available.freeRamGiB < 3 || (!force && available.freeVramGiB < 0.75)) throw new Error('资源安全保护：空闲内存低于3GiB或显存余量过低，停止请求而非换模型')
     const decision = chooseSafeModel({ requested: selectedModel, installed, installedDetails, resident, resources: available, force })
-    if (decision.selected !== selectedModel) {
-      status = { ...status, status: force ? 'failed' : 'unavailable', message: '资源安全保护：当前资源不足以继续运行所选模型，本批改用基础分析。' }
-      throw new Error('资源安全保护：当前资源不足以继续运行所选模型')
-    }
+    if (decision.selected !== selectedModel) throw new Error('资源安全保护：当前资源不足以继续运行所选模型')
     const existing = findModel(resident, selectedModel)
     if (!existing) {
       owned = true
@@ -81,32 +74,12 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       try {
         await request('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: selectedModel, stream: false, keep_alive: '30s' }) }, 120000)
       } catch (cause) {
-        status = { ...status, status: force ? 'failed' : 'unavailable', phase: 'photo-failed', message: `视觉模型预热失败：${cause.message}；本批改用基础分析，不自动切换模型。` }
-        throw Object.assign(new Error(`模型加载失败：${cause.message}`), { code: 'LENSSORT_VISION_LOAD_FAILED', cause })
+        throw Object.assign(new Error(`模型加载失败：${cause.message}`), { code: 'LENSSORT_VISION_PHOTO_FAILED', cause })
       } finally {
         const loaded = findModel(await runningModels().catch(() => []), selectedModel)
         if (loaded) digest = loaded.digest
       }
     }
-    const loaded = findModel(await runningModels(), selectedModel)
-    const vramBytes = Number(loaded?.size_vram ?? 0)
-    const modelBytes = Number(loaded?.size ?? 0)
-    const fullyGpuResident = Boolean(loaded) && vramBytes > 0 && (!modelBytes || vramBytes >= modelBytes * 0.9)
-    status = { ...status, resident: Boolean(loaded), fullyGpuResident, device: vramBytes > 0 ? `${fullyGpuResident ? 'GPU' : 'GPU/CPU 混合'} · Ollama 显存 ${Math.round(vramBytes / 1024 ** 2)} MB` : loaded ? 'CPU · 未检测到GPU驻留' : null }
-    if (!loaded) {
-      status = { ...status, status: force ? 'failed' : 'unavailable', message: '模型预热后未确认驻留，本批改用基础分析。' }
-      throw new Error('模型预热后未确认驻留，停止使用视觉模型')
-    }
-    if (fullyGpuResident !== true && !force) {
-      status = { ...status, status: 'unavailable', message: '资源安全保护：未确认模型完整驻留GPU，本批改用基础分析。' }
-      throw new Error('资源安全保护：未确认模型完整驻留GPU，停止系统内存回退')
-    }
-    status = { ...status, status: 'ready', phase: 'ready', message: `${selectedModel} 已加载，等待照片分析。` }
-    onProgress({ phase: status.phase, message: status.message })
-    return true
-  }
-  const explainOnce = async (bytes, { review = false } = {}) => {
-    await warmup()
     status = { ...status, phase: 'analyzing-photo', message: '模型已加载，正在分析照片；单次推理最多等待45秒。' }
     onProgress({ phase: status.phase, message: status.message })
     const edge = review ? 1536 : 1152
@@ -167,7 +140,7 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
       const error = currentError
       const failedModel = selectedModel
       await release()
-      if (!force && failedModel === 'qwen3.5:9b' && (error.code === 'LENSSORT_VISION_LOAD_FAILED' || /memory|alloc|oom|timeout|timed out|资源安全/i.test(error.message))) {
+      if (!force && failedModel === 'qwen3.5:9b' && /memory|alloc|oom|timeout|timed out|资源安全/i.test(error.message)) {
         try {
           await select('auto')
           status = { ...status, fallback: true, message: `9B运行失败，已尝试安全降级：${error.message}` }
@@ -183,7 +156,6 @@ export async function createVisionLanguageExplainer({ model = process.env.LENSSO
   }
   return {
     get status() { return status },
-    warmup,
     async explain(bytes, options = {}) {
       if (inFlight) throw new Error('本地视觉模型正在处理上一张照片')
       inFlight = explain(bytes, options)

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { parseInstallerArgs, parseVisionModel, supportedVisionModels } from './setup-vision-model.js'
 
 test('视觉模型安装器只接受项目支持的固定模型', () => {
-  assert.deepEqual(Object.keys(supportedVisionModels), ['qwen3.5:2b', 'qwen3.5:4b', 'gemma3:4b', 'qwen3.5:9b'])
+  assert.deepEqual(Object.keys(supportedVisionModels), ['qwen3.5:4b', 'gemma3:4b', 'qwen3.5:9b'])
   assert.equal(parseVisionModel('QWEN3.5:4B'), 'qwen3.5:4b')
   assert.throws(() => parseVisionModel('unknown:latest'), /不支持的视觉模型/)
 })

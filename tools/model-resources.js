@@ -4,14 +4,7 @@ import { promisify } from 'node:util'
 import { modelProfiles, chooseSafeModel, summarizeResources } from './model-resource-policy.js'
 
 const execute = promisify(execFile)
-export const ollamaBaseUrl = () => {
-  const url = new URL(String(process.env.LENSSORT_OLLAMA_URL || 'http://127.0.0.1:11434'))
-  const local = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
-  if (!local.has(url.hostname) && process.env.LENSSORT_ALLOW_REMOTE_OLLAMA !== '1') {
-    throw new Error('Ollama 仅允许本机回环地址；如确需远端，请显式设置 LENSSORT_ALLOW_REMOTE_OLLAMA=1')
-  }
-  return url.origin
-}
+export const ollamaBaseUrl = () => String(process.env.LENSSORT_OLLAMA_URL || 'http://127.0.0.1:11434').replace(/\/$/, '')
 
 export async function ollamaRequest(route, init = {}, timeout = 45000) {
   const response = await fetch(ollamaBaseUrl() + route, { ...init, signal: AbortSignal.timeout(timeout) })

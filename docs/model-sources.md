@@ -46,32 +46,6 @@
 
 ## MediaPipe Face Detector
 
-## SigLIP2（可选基础语义）
-
-- 模型标识：`onnx-community/siglip2-base-patch16-224-ONNX`
-- 基础模型：`google/siglip2-base-patch16-224`（Apache-2.0）
-- 使用方式：Transformers.js `zero-shot-image-classification`，CPU `q8`
-- 代码入口：`tools/siglip2-scene-analyzer.js`
-- 本地目录：`public/models/onnx-community/siglip2-base-patch16-224-ONNX/`
-- 安装命令：`npm run setup:semantic`；校验清单：`tools/semantic-assets.js`
-- 运行边界：只作场景语义辅助，不替代人脸/人体检测；未安装时 `auto` 回退 CLIP。模型输出是相对概率，不是校准后的真实准确率。
-
-### 已下载文件与 SHA-256
-
-| 文件 | 大小（字节） | SHA-256 |
-|---|---:|---|
-| `config.json` | 435 | `E43A9F7692D3819886A82CB2097048258D444F123C67D37EC825F9345B019CF2` |
-| `preprocessor_config.json` | 394 | `9B36B57EBAF20F09BF4C22100CCC21877EA6BFE5AEAD0C00C59F8AF8CCEFACFC` |
-| `special_tokens_map.json` | 636 | `BAEC30EA10906F16ADB8C18AF7A34023002C1746542612B8B41C9F09E1351351` |
-| `tokenizer.json` | 34363039 | `CB9140FAE3AC5122C972D37ADF83E1248471A38147AD76F8215C8872C6FD8322` |
-| `tokenizer.model` | 4241003 | `61A7B147390C64585D6C3543DD6FC636906C9AF3865A5548F27F31AEE1D4C8E2` |
-| `tokenizer_config.json` | 47211 | 本地生成的 64-token 配置，不参与原始 SHA 校验 |
-| `onnx/model_quantized.onnx` | 378000135 | `87FB1DBB1C091EA083E71A6C6A92FB2A39DD360EF1415314D9D645CA2B22057D` |
-
-下载日期：2026-11-12。模型权重被 `.gitignore` 排除，不进入 Git。
-
-## MediaPipe Face Detector
-
 - 模型标识：`blaze_face_short_range`
 - 使用方式：MediaPipe Tasks Vision `FaceDetector`，`runningMode: IMAGE`
 - 代码入口：`src/face-detector.ts`

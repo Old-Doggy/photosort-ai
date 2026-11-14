@@ -20,12 +20,6 @@ npm run lint
 
 The application is developed and tested primarily on Windows because folder access, GPU discovery, and Windows ML/NPU support are part of the product scope.
 
-`test:all` runs without model downloads or personal photos. The three real-RAW integration tests skip when the optional local fixture `data/eval/raw/sample.orf` is absent. To run them, prepare a licensed RAW sample at that location and install Python dependencies with `npm run setup:raw`; do not commit the image. Windows HEIC integration also requires the system HEIF/HEVC codecs.
-
-After building, `npm run verify:workspace` checks the main browser flows in Microsoft Edge with generated images and an isolated test analyzer. It covers interaction and file handling, not model accuracy or GPU/NPU execution.
-
-Bundled interface fonts carry their own [SIL OFL notices](src/assets/fonts/README.md).
-
 ## Change boundaries
 
 - Never commit personal photos, model weights, generated output, cache files, credentials, or machine-specific paths.

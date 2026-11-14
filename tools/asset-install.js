@@ -38,10 +38,9 @@ export async function installAsset(root, asset, { repair = false, fetchImpl = fe
   const target = await safeTarget(root, asset.path)
   await mkdir(path.dirname(target), { recursive: true })
   const temporary = `${target}.${randomUUID()}.part`
-  const effectiveTimeout = Math.max(timeoutMs, Math.ceil(asset.bytes / (128 * 1024)) * 1000)
   let handle
   try {
-    const response = await fetchImpl(asset.url, { redirect: 'follow', signal: AbortSignal.timeout(effectiveTimeout) })
+    const response = await fetchImpl(asset.url, { redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) })
     if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}: ${asset.id}`)
     const declared = response.headers.get('content-length')
     if (declared && Number(declared) !== asset.bytes) throw new Error(`Download size mismatch: ${asset.id}`)

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { chromium } from 'playwright'
 import sharp from 'sharp'
@@ -39,19 +39,15 @@ try {
     return route.fulfill({ json: { selected: kind === 'input' ? input : output } })
   })
   await page.goto(server.origin)
-  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByLabel('推理设备').selectOption('cpu')
   await page.getByRole('button', { name: '选择文件夹', exact: true }).first().click()
-  await page.waitForFunction(expected => document.querySelector('input[aria-label="照片来源文件夹"]')?.value === expected, input)
   await page.getByRole('button', { name: '选择文件夹', exact: true }).last().click()
-  await page.waitForFunction(expected => document.querySelector('input[aria-label="分类结果文件夹"]')?.value === expected, output)
   assert.deepEqual(picks, ['input', 'output'])
   assert.equal(await page.getByLabel('照片来源文件夹').inputValue(), input)
   assert.equal(await page.getByLabel('分类结果文件夹').inputValue(), output)
-  await page.getByRole('button', { name: '保存并关闭', exact: true }).click()
   report.checks.push('folder controls use the picker response and preserve Chinese paths; native picker remains manual')
-  await page.getByRole('button', { name: /开始分类/ }).click()
-  await page.waitForFunction(() => document.querySelector('.quick-action.primary strong')?.textContent === '停止分类')
+  await page.getByRole('button', { name: /一键筛选/ }).click()
+  await page.waitForFunction(() => document.querySelector('.quick-action.primary strong')?.textContent === '停止筛选')
   assert.equal(await page.locator('.quick-action.secondary').isDisabled(), true)
   await page.getByRole('heading', { name: '验收用风景.jpg', exact: true }).waitFor()
   await page.waitForFunction(() => document.querySelector('.quick-status-title strong')?.textContent.includes('分类完成'))
@@ -97,16 +93,16 @@ try {
   await page.screenshot({ path: path.join(workspace, 'detail.png') })
   page.once('dialog', dialog => dialog.dismiss())
   await modal.getByRole('button', { name: '删除分类副本', exact: true }).click()
-  assert.equal((await fetch(server.origin + '/api/photo-image/' + record.id)).status, 200)
+  await access(record.output)
   page.once('dialog', dialog => {
     assert.ok(dialog.message().includes('原图不会删除'))
     return dialog.accept()
   })
   await modal.getByRole('button', { name: '删除分类副本', exact: true }).click()
   await modal.waitFor({ state: 'hidden' })
-  assert.equal((await fetch(server.origin + '/api/photo-image/' + record.id)).status, 404)
+  await assert.rejects(access(record.output))
   assert.deepEqual(await readFile(source), bytes)
-  await page.getByRole('button', { name: '刷新', exact: true }).click()
+  await page.getByRole('button', { name: '刷新当前文件夹', exact: true }).click()
   await page.getByRole('status').filter({ hasText: '已按当前磁盘重新扫描' }).waitFor()
   assert.equal(await page.locator('.control-photo').count(), 0)
   report.checks.push('large image decodes; delete cancellation preserves output, confirmation removes only output, rescan removes stale card')

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { writeFile } from 'node:fs/promises'
 import { applyPublicReviewLabel, readPublicReview, reviewStatus } from './public-review.js'
 import { writeAtomicJson } from './atomic-state.js'
 

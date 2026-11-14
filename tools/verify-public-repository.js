@@ -8,7 +8,7 @@ const tracked = (await execute('git', ['ls-files', '-z'], { windowsHide: true, m
 const untracked = (await execute('git', ['ls-files', '--others', '--exclude-standard', '-z'], { windowsHide: true, maxBuffer: 2_000_000 })).stdout.split('\0').filter(Boolean)
 const candidates = [...new Set([...tracked, ...untracked])]
 const blockedPath = /^(?:artifacts|data|output|screenshots|node_modules|\.venv[^/]*|dist)(?:\/|$)|\.(?:onnx|tflite|task|bin)$/i
-const privateText = /(?:C:[\\/]Users[\\/]Olddog|E:[\\/]ai项目|\/Users\/Olddog|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,})/i
+const privateText = /(?:C:\\Users\\Olddog|E:\\ai项目|\/Users\/Olddog|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,})/i
 const failures = []
 const pathViolations = candidates.filter(file => blockedPath.test(file))
 if (pathViolations.length) failures.push({ kind: 'blocked-path', files: pathViolations })

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { access, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import * as ort from 'onnxruntime-node'
 import sharp from 'sharp'
 import { classifyFolderCategory } from './folder-classification.js'
@@ -14,11 +14,14 @@ import { getVisionLanguageTrigger } from './vision-language-policy.js'
 import { reviewPhotoDecision } from './vision-review.js'
 import { analyzeSubjectQuality } from './subject-quality.js'
 import { createSimilarityReviewPolicy } from './similarity-review.js'
-import { normalizeImageBytes } from './image-input.js'
-import { createSiglip2SceneAnalyzer } from './siglip2-scene-analyzer.js'
-import { computeDifferenceHash } from './similar-groups.js'
 
 const clamp = value => Math.max(0, Math.min(100, value))
+
+function buildPhotoExplanation(classification, quality) {
+  const clarity = quality.clarityScore >= 80 ? '细节较清晰' : quality.clarityScore >= 60 ? '细节清晰度中等' : '细节可能略显模糊'
+  const light = quality.exposureStatus === '曝光均衡' ? '光线比较均衡' : quality.exposureStatus === '整体偏暗' ? '整体光线偏暗' : quality.exposureStatus === '整体偏亮' ? '亮部略亮' : '明暗反差较大'
+  return `${classification.explanation ?? classification.reason ?? '已完成内容分析'} ${clarity}，${light}。`
+}
 
 function buildTechnicalExplanation(classification, quality) {
   const clarity = quality.clarityScore >= 80 ? '细节较清晰' : quality.clarityScore >= 60 ? '细节清晰度中等' : '细节可能略显模糊'
@@ -92,9 +95,7 @@ export async function analyzePhotoQuality(bytes, faces = null) {
 
 export async function createPhotoAnalyzer(root, backend = 'auto', model = 'auto', options = {}) {
   if (!['auto', 'cpu', 'dml', 'igpu', 'dgpu', 'npu'].includes(backend) && !/^gpu-\d+$/.test(backend)) throw new Error('Unsupported backend')
-  const visionMode = ['off', 'balanced', 'precision'].includes(options.visionMode) ? options.visionMode : 'balanced'
-  const requestedVisionModel = visionMode === 'off' ? 'off' : model
-  let device = await resolveInferenceDevice(root, backend)
+  const device = await resolveInferenceDevice(root, backend)
   const similarityReview = options.experimentalReview === true ? createSimilarityReviewPolicy() : null
   const modelRoot = path.join(root, 'public/models/onnx-community/mobilenetv4_conv_small.e2400_r224_in1k')
   const config = JSON.parse(await readFile(path.join(modelRoot, 'config.json'), 'utf8'))
@@ -119,67 +120,26 @@ export async function createPhotoAnalyzer(root, backend = 'auto', model = 'auto'
       if (backend !== 'auto' || candidate === 'cpu') throw error
     }
   }
-  if (provider === 'cpu' && device.provider !== 'cpu') {
-    device = { ...device, id: 'cpu', name: 'CPU', provider: 'cpu', fallbackFrom: device.id, fallbackReason }
-  }
   let faceDetector
   try { faceDetector = await createLocalFaceDetector(root) }
   catch (error) { if (session) await session.release(); if (npuSession) await npuSession.close(); throw error }
-  let personDetector
-  try { personDetector = await createYoloxPersonDetector(root) }
-  catch (error) {
-    await Promise.allSettled([faceDetector.close(), session?.release(), npuSession?.close()])
-    throw error
-  }
-  const semanticModel = options.semanticModel ?? process.env.LENSSORT_SEMANTIC_MODEL ?? 'auto'
-  let sceneAnalyzer
-  let sceneSource
-  try {
-    if (semanticModel === 'clip') {
-      sceneAnalyzer = await createClipSceneAnalyzer(root)
-      sceneSource = 'CLIP ViT-B/32'
-    } else {
-      try {
-        await access(path.join(root, 'public/models/onnx-community/siglip2-base-patch16-224-ONNX/onnx/model_quantized.onnx'))
-        sceneAnalyzer = await createSiglip2SceneAnalyzer(root)
-        sceneSource = 'SigLIP2 ViT-B/16-224'
-      } catch (error) {
-        if (semanticModel === 'siglip2') throw new Error('SigLIP2 模型未安装：' + error.message)
-        sceneAnalyzer = await createClipSceneAnalyzer(root)
-        sceneSource = 'CLIP ViT-B/32'
-      }
-    }
-  } catch (error) {
-    await Promise.allSettled([faceDetector.close(), personDetector.close(), sceneAnalyzer?.close(), session?.release(), npuSession?.close()])
-    throw error
-  }
+  const personDetector = await createYoloxPersonDetector(root)
+  const sceneAnalyzer = await createClipSceneAnalyzer(root)
   let visionLanguageExplainer
-  try { visionLanguageExplainer = await createVisionLanguageExplainer({ model: requestedVisionModel, force: options.forceModel === true, onProgress: options.onProgress }) }
+  try { visionLanguageExplainer = await createVisionLanguageExplainer({ model, force: options.forceModel === true, onProgress: options.onProgress }) }
   catch (error) {
     await Promise.allSettled([faceDetector.close(), personDetector.close(), sceneAnalyzer.close(), session?.release(), npuSession?.close()])
     throw error
-  }
-  if (visionLanguageExplainer.status.status === 'ready') {
-    try { await visionLanguageExplainer.warmup() }
-    catch (error) {
-      if (options.forceModel === true) {
-        await Promise.allSettled([faceDetector.close(), personDetector.close(), sceneAnalyzer.close(), visionLanguageExplainer.close(), session?.release(), npuSession?.close()])
-        throw error
-      }
-      await visionLanguageExplainer.close().catch(() => {})
-    }
   }
   let forcedFailure = null
   return {
     backend: provider,
     device,
-    get sceneModel() { return sceneSource },
     get npuVerified() { return verifiedNpu },
-    async analyze(bytes, meta = {}) {
+    async analyze(bytes) {
       if (forcedFailure) throw forcedFailure
       const startedAt = performance.now()
-      const workingBytes = await normalizeImageBytes(bytes, { fileName: meta.fileName })
-      const image = sharp(workingBytes, { limitInputPixels: 80_000_000 }).rotate().removeAlpha().toColourspace('srgb')
+      const image = sharp(bytes, { limitInputPixels: 80_000_000 }).rotate().removeAlpha().toColourspace('srgb')
       const metadata = await image.metadata()
       const width = metadata.autoOrient?.width ?? metadata.width
       const height = metadata.autoOrient?.height ?? metadata.height
@@ -221,38 +181,33 @@ export async function createPhotoAnalyzer(root, backend = 'auto', model = 'auto'
       let faces = null
       let faceError = null
       const faceStarted = performance.now()
-      try { faces = await faceDetector.detect(await sharp(workingBytes).rotate().resize(1280, 1280, { fit: 'inside', withoutEnlargement: true }).jpeg().toBuffer()) }
+      try { faces = await faceDetector.detect(await sharp(bytes).rotate().resize(1280, 1280, { fit: 'inside', withoutEnlargement: true }).jpeg().toBuffer()) }
       catch (error) { faceError = error.message }
       const faceMs = performance.now() - faceStarted
       const qualityStarted = performance.now()
-      const quality = await analyzePhotoQuality(workingBytes, faces)
+      const quality = await analyzePhotoQuality(bytes, faces)
       const qualityMs = performance.now() - qualityStarted
       const auxiliaryStarted = performance.now()
-      let person
-      try {
-        person = await personDetector.detect(workingBytes)
-      } catch (error) {
-        person = { status: 'unavailable', source: 'YOLOX Tiny', boxes: [], candidateCount: null, maxScore: null, durationMs: 0, error: error.message }
-      }
+      const person = await personDetector.detect(bytes)
       const scene = shouldRunSceneAuxiliary(candidates, faces, person)
-        ? await sceneAnalyzer.analyze(workingBytes)
-        : { status: 'skipped', source: sceneSource, topLabel: null, topScore: null, candidates: [], reason: 'MobileNetV4 结果已达到快速路径门槛' }
+        ? await sceneAnalyzer.analyze(bytes)
+        : { status: 'skipped', source: 'CLIP ViT-B/32', topLabel: null, topScore: null, candidates: [], reason: 'MobileNetV4 结果已达到快速路径门槛' }
       const auxiliaryMs = performance.now() - auxiliaryStarted
-      let classification = classifyFolderCategory(candidates, faces, { person, sceneCandidates: scene.candidates, sceneSource: scene.source })
+      let classification = classifyFolderCategory(candidates, faces, { person, sceneCandidates: scene.candidates })
       classification.explanation = buildTechnicalExplanation(classification, quality)
       let visionExplanation = null
-      const visionTrigger = getVisionLanguageTrigger({ classification, candidates, faces, person, scene }, { mode: visionMode })
+      const visionTrigger = getVisionLanguageTrigger({ classification, candidates, faces, person, scene })
       let visionMs = 0
       let visionCategoryApplied = false
       if (visionLanguageExplainer.status.status === 'ready' && visionTrigger.run) {
         const visionStarted = performance.now()
         try {
-          const fused = await reviewPhotoDecision({ bytes: workingBytes, classification, faces, person, scene, enableReview: options.experimentalReview === true, similarityReview, explain: (image, settings) => visionLanguageExplainer.explain(image, settings) })
+          const fused = await reviewPhotoDecision({ bytes, classification, faces, person, scene, enableReview: options.experimentalReview === true, similarityReview, explain: (image, settings) => visionLanguageExplainer.explain(image, settings) })
           classification = fused.classification
           visionCategoryApplied = fused.applied
           visionExplanation = { ...fused.vision, triggerReason: visionTrigger.reason }
         } catch (error) {
-          if (options.forceModel === true && !['LENSSORT_VISION_OUTPUT_INVALID', 'LENSSORT_VISION_PHOTO_FAILED', 'LENSSORT_VISION_LOAD_FAILED'].includes(error.code)) {
+          if (options.forceModel === true && !['LENSSORT_VISION_OUTPUT_INVALID', 'LENSSORT_VISION_PHOTO_FAILED'].includes(error.code)) {
             forcedFailure = Object.assign(new Error(error.message), { code: 'LENSSORT_FORCED_MODEL_FAILED' })
             throw forcedFailure
           }
@@ -262,29 +217,15 @@ export async function createPhotoAnalyzer(root, backend = 'auto', model = 'auto'
         visionMs = performance.now() - visionStarted
       }
       const subjectStarted = performance.now()
-      try { quality.subjectQuality = await analyzeSubjectQuality(workingBytes, { category: classification.category, faces: faces ?? {}, person, vision: visionExplanation ?? {} }) }
+      try { quality.subjectQuality = await analyzeSubjectQuality(bytes, { category: classification.category, faces: faces ?? {}, person, vision: visionExplanation ?? {} }) }
       catch (error) { quality.subjectQuality = { status: 'unavailable', clarityScore: null, blurRisk: 'unknown', regions: [], reason: error.message } }
       quality.subjectQualityMs = Math.round(performance.now() - subjectStarted)
       if (quality.subjectQuality.blurRisk === 'high') classification.explanation = `${classification.explanation ?? ''} 主体候选区域存在明显清晰度风险，不自动入选精选；可查看原图确认。`.trim()
       const evidence = buildModelEvidence({ classification, candidates, scene, person, faces, quality, backend: provider, device, npuVerified: verifiedNpu, npuEvidence })
-      let dhash = null
-      try {
-        const fingerprint = await computeDifferenceHash(workingBytes)
-        dhash = { hash: Buffer.from(fingerprint.hash).toString('hex'), deviation: Number(fingerprint.deviation.toFixed(2)) }
-      } catch {}
       const totalMs = performance.now() - startedAt
-      return { ...classification, ...quality, candidates, faces, faceError, width, height, backend: provider, device, fallbackReason, visionMode, classificationMs: Math.round(classificationMs), durationMs: Math.round(totalMs), timings: { decodePreprocessMs: Number(decodePreprocessMs.toFixed(2)), classificationMs: Number(classificationMs.toFixed(2)), faceMs: Number(faceMs.toFixed(2)), qualityMs: Number(qualityMs.toFixed(2)), auxiliaryMs: Number(auxiliaryMs.toFixed(2)), visionMs: Number(visionMs.toFixed(2)), totalMs: Number(totalMs.toFixed(2)) }, visionTriggered: visionTrigger.run, visionTriggerReason: visionTrigger.reason, visionCategoryApplied, npuVerified: verifiedNpu, npuEvidence: npuEvidence ? { providers: npuEvidence.providers, profile: npuEvidence.profile, profileScope: npuEvidence.profileScope, mixedCpuAuxiliary: npuEvidence.mixedCpuAuxiliary, profileEventCount: npuEvidence.profileEventCount, npuKernelCount: npuEvidence.npuKernelCount, npuKernelMs: npuEvidence.npuKernelMs, cpuKernelCount: npuEvidence.cpuKernelCount, cpuKernelMs: npuEvidence.cpuKernelMs } : null, personDetection: person, sceneSemantics: scene, modelEvidence: evidence, dhash, visionExplanation, visionModelStatus: visionLanguageExplainer.status }
+      return { ...classification, ...quality, candidates, faces, faceError, width, height, backend: provider, device, fallbackReason, classificationMs: Math.round(classificationMs), durationMs: Math.round(totalMs), timings: { decodePreprocessMs: Number(decodePreprocessMs.toFixed(2)), classificationMs: Number(classificationMs.toFixed(2)), faceMs: Number(faceMs.toFixed(2)), qualityMs: Number(qualityMs.toFixed(2)), auxiliaryMs: Number(auxiliaryMs.toFixed(2)), visionMs: Number(visionMs.toFixed(2)), totalMs: Number(totalMs.toFixed(2)) }, visionTriggered: visionTrigger.run, visionTriggerReason: visionTrigger.reason, visionCategoryApplied, npuVerified: verifiedNpu, npuEvidence: npuEvidence ? { providers: npuEvidence.providers, profile: npuEvidence.profile, profileScope: npuEvidence.profileScope, mixedCpuAuxiliary: npuEvidence.mixedCpuAuxiliary, profileEventCount: npuEvidence.profileEventCount, npuKernelCount: npuEvidence.npuKernelCount, npuKernelMs: npuEvidence.npuKernelMs, cpuKernelCount: npuEvidence.cpuKernelCount, cpuKernelMs: npuEvidence.cpuKernelMs } : null, personDetection: person, sceneSemantics: scene, modelEvidence: evidence, visionExplanation, visionModelStatus: visionLanguageExplainer.status }
     },
     get visionModelStatus() { return visionLanguageExplainer.status },
-    async close() {
-      await Promise.allSettled([
-        faceDetector.close(),
-        personDetector.close(),
-        sceneAnalyzer.close(),
-        visionLanguageExplainer.close(),
-        session?.release(),
-        npuSession?.close(),
-      ])
-    },
+    async close() { try { await faceDetector.close() } finally { await personDetector.close(); await sceneAnalyzer.close(); await visionLanguageExplainer.close(); if (session) await session.release(); if (npuSession) await npuSession.close() } },
   }
 }

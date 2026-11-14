@@ -29,16 +29,6 @@ function boxIoU(left, right) {
   return union > 0 ? intersection / union : 0
 }
 
-function boxContainment(left, right) {
-  const x1 = Math.max(left.x, right.x)
-  const y1 = Math.max(left.y, right.y)
-  const x2 = Math.min(left.x + left.width, right.x + right.width)
-  const y2 = Math.min(left.y + left.height, right.y + right.height)
-  const intersection = Math.max(0, x2 - x1) * Math.max(0, y2 - y1)
-  const smaller = Math.min(left.width * left.height, right.width * right.height)
-  return smaller > 0 ? intersection / smaller : 0
-}
-
 export function getReliablePersonCount(person = {}) {
   if (person.status !== 'succeeded') return null
   if (!Array.isArray(person.boxes)) return null
@@ -59,7 +49,7 @@ export function getReliablePersonCount(person = {}) {
     .sort((left, right) => right.score - left.score)
   const independent = []
   for (const candidate of candidates) {
-    if (independent.every(existing => boxIoU(existing, candidate) < 0.45 && boxContainment(existing, candidate) < 0.6)) independent.push(candidate)
+    if (independent.every(existing => boxIoU(existing, candidate) < 0.45)) independent.push(candidate)
   }
   return independent.length
 }
@@ -77,7 +67,7 @@ export function classifyFolderCategory(candidates, faces, auxiliary = {}) {
   const reliablePersonCount = getReliablePersonCount(auxiliary.person)
   const personEvidenceCount = reliablePersonCount ?? Number(auxiliary.person?.candidateCount ?? 0)
   const personCandidate = auxiliary.person?.status === 'succeeded' && Number(auxiliary.person.maxScore) >= 0.25 && personEvidenceCount > 0
-  const landscape = landscapeSignal?.score >= (String(auxiliary.sceneSource ?? '').startsWith('SigLIP2') ? 0.3 : 0.12)
+  const landscape = landscapeSignal?.score >= 0.12
   if (!faces || !Number.isInteger(faces.faceCount) || faces.faceCount < 0) {
     return { category: '待确认', confidence, reason: '人脸状态未知，无法可靠区分人物与风景' }
   }

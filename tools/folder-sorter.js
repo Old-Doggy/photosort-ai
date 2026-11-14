@@ -4,7 +4,7 @@ import { mkdir, realpath, lstat, readdir, readFile, writeFile, unlink, open, lin
 import { writeAtomicJson } from './atomic-state.js'
 
 const categories = new Set(['单人', '多人', '人物与风景', '风景', '动物', '植物', '其他', '待确认'])
-const extensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif', '.heic', '.heif', '.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', '.raf', '.pef'])
+const extensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif'])
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 const signature = stat => stat.size + ':' + stat.mtimeMs
 const within = (parent, child) => {
@@ -119,7 +119,7 @@ export async function deleteFolderOutput({ stateDir, output, source }) {
   return state.sources[source]
 }
 
-export async function updateFolderCategory({ stateDir, output, source, category, manual = true, previous = null }) {
+export async function updateFolderCategory({ stateDir, output, source, category }) {
   if (!categories.has(category)) throw new Error('无效分类')
   const stateFile = path.join(path.resolve(stateDir), 'records.json')
   const state = JSON.parse(await readFile(stateFile, 'utf8'))
@@ -138,12 +138,9 @@ export async function updateFolderCategory({ stateDir, output, source, category,
   const target = path.join(categoryDir, path.basename(current))
   const sharedSources = Object.entries(state.sources).filter(([, item]) => item.status === 'done' && path.resolve(item.output ?? '') === current)
   const manualCategoryAt = new Date().toISOString()
-  const metadata = manual
-    ? { manualCategory: category, manualAction: 'category-corrected', manualCategoryAt }
-    : { manualCategory: previous?.manualCategory ?? undefined, manualAction: previous?.manualAction ?? undefined, manualCategoryAt: previous?.manualCategoryAt ?? undefined }
   const updateRecords = destination => {
     for (const [sharedSource, sharedRecord] of sharedSources) {
-      state.sources[sharedSource] = { ...sharedRecord, output: destination, ...metadata, result: { ...sharedRecord.result, category } }
+      state.sources[sharedSource] = { ...sharedRecord, output: destination, manualCategory: category, manualAction: 'category-corrected', manualCategoryAt, result: { ...sharedRecord.result, category } }
     }
     return state.sources[source]
   }
@@ -156,13 +153,7 @@ export async function updateFolderCategory({ stateDir, output, source, category,
   catch (error) { if (error.code !== 'ENOENT' && error.code !== 'EEXIST') throw error; if (error.code === 'EEXIST') throw error }
   await rename(current, target)
   const updated = updateRecords(target)
-  try { await writeAtomicJson(stateFile, state) }
-  catch (error) {
-    await rename(target, current).catch(rollbackError => {
-      error.message += `；回滚失败：${rollbackError.message}`
-    })
-    throw error
-  }
+  await writeAtomicJson(stateFile, state)
   return updated
 }
 
@@ -195,23 +186,11 @@ export async function createFolderSorter(options) {
   try { lock = await open(lockPath, 'wx') }
   catch (error) {
     if (error.code !== 'EEXIST') throw error
-    let old = null
-    try { old = JSON.parse(await readFile(lockPath, 'utf8')) }
-    catch (parseError) { if (parseError.code !== 'ENOENT' && !(parseError instanceof SyntaxError)) throw parseError }
-    if (old && Number.isInteger(old.pid) && old.pid > 0) {
-      try {
-        process.kill(old.pid, 0)
-        throw new Error('Service already running (lock)')
-      } catch (probe) {
-        if (probe.code !== 'ESRCH') throw probe
-      }
-    }
-    await unlink(lockPath).catch(removeError => { if (removeError.code !== 'ENOENT') throw removeError })
-    try { lock = await open(lockPath, 'wx') }
-    catch (retryError) {
-      if (retryError.code === 'EEXIST') throw new Error('Service already running (lock)')
-      throw retryError
-    }
+    const old = JSON.parse(await readFile(lockPath, 'utf8'))
+    try { process.kill(old.pid, 0); throw new Error('Service already running (lock)') }
+    catch (probe) { if (probe.code !== 'ESRCH') throw probe }
+    await unlink(lockPath)
+    lock = await open(lockPath, 'wx')
   }
   await lock.writeFile(JSON.stringify({ pid: process.pid, input, output }))
   const stateFile = path.join(stateDir, 'records.json')
@@ -262,7 +241,6 @@ export async function createFolderSorter(options) {
   }
   let stopped = false
   let running
-  let mutating = false
   const pollMs = Math.max(20, options.pollMs ?? 1000)
   const stableMs = Math.max(pollMs * 2, options.stableMs ?? 2000)
   try { await save() }
@@ -287,7 +265,7 @@ export async function createFolderSorter(options) {
       try { if (digest(await readFile(destination)) !== hash) destination = null }
       catch (error) { if (error.code === 'ENOENT') destination = null; else throw error }
     }
-    if (!result || (existing?.analysisVersion !== analysisVersion && !preservedDeleted)) result = await options.analyze(bytes, { fileName: path.basename(file) })
+    if (!result || (existing?.analysisVersion !== analysisVersion && !preservedDeleted)) result = await options.analyze(bytes)
     if (manualCategory) result = { ...result, category: manualCategory }
     if (!categories.has(result.category)) throw new Error('Analyzer returned invalid category')
     if (destination && path.basename(path.dirname(destination)) !== result.category) destination = null
@@ -307,6 +285,7 @@ export async function createFolderSorter(options) {
     }
     const previous = state.sources[file]
     state.sources[file] = { ...previous, status: preservedDeleted ? 'output-deleted' : 'done', analysisVersion, signature: expected, hash, output: preservedDeleted ? null : destination, result, manualCategory, manualAction: preservedDeleted ? 'deleted-output' : previous?.manualAction, completedAt: new Date().toISOString(), sourceMissingAt: undefined, outputMissingAt: undefined }
+    await save()
     notify({ type: preservedDeleted ? 'output-deleted' : 'classified', category: result.category, file, output: destination })
     return true
   }
@@ -349,11 +328,7 @@ export async function createFolderSorter(options) {
       }
       if (previous?.status === 'done' && previous.analysisVersion === analysisVersion && previous.signature === expected && await hasValidOutput(previous)) { completed++; continue }
       if (previous?.status === 'output-deleted' && previous.analysisVersion === analysisVersion && previous.signature === expected) { completed++; continue }
-      if (previous?.status === 'failed' && previous.analysisVersion === analysisVersion && previous.signature === expected) {
-        const failedAt = Date.parse(previous.failedAt ?? '')
-        const retryMs = Math.max(1000, Number(options.failedRetryMs ?? 60000))
-        if (batch || !Number.isFinite(failedAt) || Date.now() - failedAt < retryMs) { completed++; continue }
-      }
+      if (previous?.status === 'failed' && previous.analysisVersion === analysisVersion && previous.signature === expected) { completed++; continue }
       if (!seen || seen.signature !== expected) { observed.set(file, { signature: expected, at: Date.now(), firstAt: seen?.firstAt ?? Date.now() }); notify({ type: 'progress', phase: 'waiting', completed, total: files.length, pending: files.length - completed, currentFile: file, message: '正在等待文件写入完成：' + path.basename(file) }); continue }
       if (Date.now() - seen.at < stableMs) { notify({ type: 'progress', phase: 'waiting', completed, total: files.length, pending: files.length - completed, currentFile: file, message: '正在等待文件写入完成：' + path.basename(file) }); continue }
       try {
@@ -364,7 +339,7 @@ export async function createFolderSorter(options) {
       }
       catch (error) {
         if (error.code === 'ENOENT') { if (batch) { terminal.set(file, 'missing'); completed++ }; continue }
-        state.sources[file] = { ...previous, status: 'failed', analysisVersion, signature: expected, error: error.message, failedAt: new Date().toISOString() }
+        state.sources[file] = { status: 'failed', analysisVersion, signature: expected, error: error.message, failedAt: new Date().toISOString() }
         await save()
         if (batch) terminal.set(file, 'failed')
         notify({ type: 'failed', file, error: error.message })
@@ -378,7 +353,6 @@ export async function createFolderSorter(options) {
       }
     }
     if (stopped) return
-    await save()
     const pending = files.length - completed
     const failed = files.filter(file => terminal.get(file) === 'failed' || state.sources[file]?.status === 'failed').length
     const missing = [...terminal.values()].filter(value => value === 'missing').length
@@ -387,33 +361,18 @@ export async function createFolderSorter(options) {
       notify(batchResult)
     } else notify({ type: 'progress', phase: pending ? 'waiting' : 'idle', completed, total: files.length, pending, currentFile: null, message: pending ? `等待 ${pending} 张照片写入完成…` : files.length ? `本轮处理完成：${completed}/${files.length} 张` : '正在等待新照片…' })
   }
-  const exclusive = async fn => {
-    if (mutating) throw Object.assign(new Error('正在修改照片，请稍候'), { status: 409 })
-    mutating = true
-    try {
-      while (running) await running
-      await save()
-      return await fn()
-    } finally {
-      mutating = false
-    }
-  }
   const tick = () => {
-    if (stopped || running || mutating) return
-    const inspection = inspect().catch(error => {
+    if (stopped || running) return
+    running = inspect().catch(error => {
       notify({ type: 'service-error', error: error.message })
       if (batch) batchResult = { phase: 'error', error: error.message }
-    })
-    // Mutations await inspection only. Waiting on the automatic-close
-    // continuation too would form a cycle with close waiting for mutating.
-    running = inspection
-    void inspection.finally(async () => {
+    }).finally(async () => {
       running = null
       if (batchResult) {
         try { if (!closing) await controller.close(true); resolveFinished(batchResult) }
         catch (error) { resolveFinished({ phase: 'error', error: error.message }) }
       }
-    }).catch(error => { notify({ type: 'service-error', error: error.message }) })
+    })
   }
   const timer = setInterval(tick, pollMs)
   let closing
@@ -424,39 +383,28 @@ export async function createFolderSorter(options) {
       closing ??= (async () => {
         stopped = true
         clearInterval(timer)
-        try {
-          if (running && !skipRunning) await running
-          while (mutating) await new Promise(resolve => setTimeout(resolve, 10))
-        }
-        finally {
-          try { await save() }
-          finally { await lock.close(); await unlink(lockPath).catch(error => { if (error.code !== 'ENOENT') throw error }) }
-        }
+        try { if (running && !skipRunning) await running }
+        finally { await lock.close(); await unlink(lockPath).catch(error => { if (error.code !== 'ENOENT') throw error }) }
       })()
       return closing
     },
     async waitForIdle() { if (running) await running },
-    async deleteOutput(source) {
-      return exclusive(() => deleteOutput(source))
-    },
-    async updateCategory(source, category, options = {}) {
-      return exclusive(async () => {
-        const updated = await updateFolderCategory({ stateDir, output, source, category, ...options })
-        state = JSON.parse(await readFile(stateFile, 'utf8'))
-        outputValidation.clear()
-        return updated
-      })
+    async deleteOutput(source) { if (running) await running; return deleteOutput(source) },
+    async updateCategory(source, category) {
+      if (running) await running
+      const updated = await updateFolderCategory({ stateDir, output, source, category })
+      state = JSON.parse(await readFile(stateFile, 'utf8'))
+      outputValidation.clear()
+      return updated
     },
     async rescan() {
-      return exclusive(async () => {
-        const summary = await rescanFolderState({ stateDir, input, output })
-        state = JSON.parse(await readFile(stateFile, 'utf8'))
-        outputValidation.clear()
-        notify({ type: 'rescan', ...summary })
-        return summary
-      })
+      if (running) await running
+      const summary = await rescanFolderState({ stateDir, input, output })
+      state = JSON.parse(await readFile(stateFile, 'utf8'))
+      outputValidation.clear()
+      notify({ type: 'rescan', ...summary })
+      return summary
     },
-    snapshot() { return state },
   }
   tick()
   return controller

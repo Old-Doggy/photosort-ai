@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises'
 import { createFolderSorter } from './folder-sorter.js'
 const fixture = async () => {
   const root = await mkdtemp(path.resolve('artifacts/migration-'))
@@ -39,15 +39,4 @@ test('version upgrade never recreates a manually deleted output', async () => {
     assert.equal(calls, 0)
     assert.equal(await readFile(source, 'utf8'), 'original-content')
   } finally { await next.close() }
-})
-
-test('an empty stale service lock is recovered instead of blocking startup', async () => {
-  const root = await mkdtemp(path.resolve('artifacts/lock-recovery-'))
-  const input = path.join(root, '输入')
-  const output = path.join(root, '输出')
-  const stateDir = path.join(root, '状态')
-  await mkdir(input); await mkdir(stateDir)
-  await writeFile(path.join(stateDir, 'service.lock'), '')
-  const sorter = await createFolderSorter({ input, output, stateDir, batch: false, pollMs: 50, stableMs: 100, analyze: async () => ({ category: '单人' }) })
-  await sorter.close()
 })

@@ -4,16 +4,11 @@ import { getVisionLanguageTrigger, applyVisionLanguageCategory, getVisionConflic
 const original = { category: '多人', confidence: 0.9, reason: '检测器候选' }
 const review = overrides => ({ generated: true, categoryCandidate: '人物与风景', confidence: 0.01, mediaType: 'photograph', subjectFocus: 'environment_portrait', realPersonPresent: true, personCount: 1, primaryPersonCount: 1, landscapePresent: true, statuePresent: false, animalPresent: false, uncertain: false, ...overrides })
 
-test('balanced mode is the default and only reviews uncertain photos', () => {
-  const stable = getVisionLanguageTrigger({ classification: { category: '风景' }, candidates: [{ score: 0.99 }], faces: { faceCount: 0 }, person: { status: 'succeeded', candidateCount: 0 }, scene: { status: 'succeeded', candidates: [] } })
-  assert.equal(stable.run, false)
-  assert.equal(getVisionLanguageTrigger({ classification: { category: '待确认' } }).run, true)
-  assert.equal(getVisionLanguageTrigger({ classification: { category: '风景' }, person: { status: 'succeeded', candidateCount: 1, maxScore: 0.9 }, faces: { faceCount: 0 } }).run, true)
-})
-test('explicit precision mode reviews every photo and off mode never calls the VLM', () => {
-  const stable = { classification: { category: '风景' }, candidates: [{ score: 0.99 }] }
-  assert.equal(getVisionLanguageTrigger(stable, { mode: 'precision' }).run, true)
-  assert.equal(getVisionLanguageTrigger(stable, { mode: 'off' }).run, false)
+test('precision mode reviews all photos by default without trusting ImageNet confidence', () => {
+  const previous = process.env.LENSSORT_VLM_MODE
+  delete process.env.LENSSORT_VLM_MODE
+  try { assert.equal(getVisionLanguageTrigger({ classification: { category: '风景' }, candidates: [{ score: 0.99 }] }).run, true) }
+  finally { if (previous === undefined) delete process.env.LENSSORT_VLM_MODE; else process.env.LENSSORT_VLM_MODE = previous }
 })
 test('real person and statue may coexist', () => {
   const result = applyVisionLanguageCategory(original, review({ statuePresent: true }), { faces: { faceCount: 1 } })

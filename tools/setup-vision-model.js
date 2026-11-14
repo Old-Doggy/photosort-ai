@@ -1,5 +1,4 @@
 import { access, rm, writeFile } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import os from 'node:os'
@@ -10,7 +9,6 @@ import { ensureOllama } from './ollama-lifecycle.js'
 
 const execute = promisify(execFile)
 export const supportedVisionModels = Object.freeze({
-  'qwen3.5:2b': { label: 'Qwen 3.5 2B', disk: '约 2–3 GB', recommendation: '轻量快速，适合低配或只想快速看图解释的电脑' },
   'qwen3.5:4b': { label: 'Qwen 3.5 4B', disk: '约 3–5 GB', recommendation: '默认推荐，兼顾速度、内存和中文图像描述' },
   'gemma3:4b': { label: 'Gemma 3 4B', disk: '约 3–5 GB', recommendation: '兼容性基线，适合希望使用 Gemma 的电脑' },
   'qwen3.5:9b': { label: 'Qwen 3.5 9B', disk: '约 6–10 GB', recommendation: '精度优先，建议 32 GB 内存和 9 GB 以上空闲显存' },
@@ -46,14 +44,9 @@ async function findExecutable() {
 async function downloadOfficialInstaller() {
   if (process.platform !== 'win32') throw new Error('自动安装 Ollama 目前仅支持 Windows；请从 https://ollama.com/download 手动安装')
   const file = path.join(os.tmpdir(), `LensSort-OllamaSetup-${Date.now()}.exe`)
-  const expected = String(process.env.LENSSORT_OLLAMA_SHA256 || '').trim().toUpperCase()
-  if (!/^[A-F0-9]{64}$/.test(expected)) throw new Error('缺少 LENSSORT_OLLAMA_SHA256；拒绝下载和执行未校验安装器')
-  const response = await fetch(officialInstallerUrl, { signal: AbortSignal.timeout(120000), redirect: 'error' })
+  const response = await fetch(officialInstallerUrl, { signal: AbortSignal.timeout(120000) })
   if (!response.ok) throw new Error(`无法下载官方 Ollama 安装程序（HTTP ${response.status}）`)
-  const bytes = Buffer.from(await response.arrayBuffer())
-  const actual = createHash('sha256').update(bytes).digest('hex').toUpperCase()
-  if (actual !== expected) throw new Error('Ollama 安装器 SHA-256 不匹配，已拒绝执行')
-  await writeFile(file, bytes)
+  await writeFile(file, Buffer.from(await response.arrayBuffer()))
   try {
     console.log('已下载官方 Ollama 安装程序，正在打开安装向导；请按向导完成安装。')
     const child = spawn(file, [], { windowsHide: false, stdio: 'inherit' })

@@ -1,4 +1,4 @@
-[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+[CmdletBinding(SupportsShouldProcess)]
 param(
   [ValidateSet('install', 'uninstall', 'status', 'validate')]
   [string]$Mode = 'status',
@@ -21,9 +21,6 @@ function Test-Setup {
 }
 
 function New-StartupShortcut {
-  if (Test-Path -LiteralPath $shortcut -PathType Leaf) {
-    Copy-Item -LiteralPath $shortcut -Destination ($shortcut + '.bak') -Force
-  }
   $shell = New-Object -ComObject WScript.Shell
   $link = $shell.CreateShortcut($shortcut)
   $link.TargetPath = $powershell

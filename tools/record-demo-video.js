@@ -23,8 +23,7 @@ const context = await browser.newContext({ recordVideo: { dir: outputDir, size: 
 const page = await context.newPage()
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
-const statusResponse = await fetch(server.origin + '/api/status')
-const controlCookie = statusResponse.headers.get('set-cookie').split(';')[0]
+const status = await (await fetch(server.origin + '/api/status')).json()
 const report = { status: 'failed', createdAt: new Date().toISOString(), fixture: '公开演示人像的本地亮度变换；仅证明网页操作，不代表真实准确率、审美结论或真人满意度', errors, checks: [] }
 const video = page.video()
 const hold = async (text, milliseconds) => {
@@ -42,7 +41,7 @@ const hold = async (text, milliseconds) => {
 }
 
 try {
-  const configured = await fetch(server.origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', cookie: controlCookie }, body: JSON.stringify({ input, output, backend: 'npu' }) })
+  const configured = await fetch(server.origin + '/api/config', { method: 'POST', headers: { 'content-type': 'application/json', 'x-lenssort-token': status.token }, body: JSON.stringify({ input, output, backend: 'npu' }) })
   if (!configured.ok) throw new Error('Demo configuration failed')
   await page.goto(server.origin)
   await page.getByRole('button', { name: /一键筛选/ }).waitFor()

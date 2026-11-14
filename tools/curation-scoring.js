@@ -1,5 +1,4 @@
 import os from 'node:os'
-import { normalizeImageBytes } from './image-input.js'
 
 const MIN_FREE_MEMORY = 2.5 * 1024 ** 3
 
@@ -26,7 +25,7 @@ export async function scoreCurationBatch({ records, validate, onProgress = () =>
         const record = candidates[index]
         try {
           const { bytes } = await validate(record)
-          const result = await scorer.score(await normalizeImageBytes(bytes, { fileName: record.name }))
+          const result = await scorer.score(bytes)
           if (result?.status === 'succeeded' && Number.isFinite(result.score)) record.aestheticScore = result.score
           else warnings.push(`${record.name} 的LAION评分不可用。`)
         } catch (error) { warnings.push(`${record.name} 的LAION评分失败：${error.message}`) }

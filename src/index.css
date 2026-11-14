@@ -12,8 +12,8 @@
   --color-primary-pale: #f1fbf4;
   --color-ink: #243e38;
   --color-text: #49675a;
-  --color-muted: #5f7268;
-  --color-subtle: #6f8076;
+  --color-muted: #718178;
+  --color-subtle: #94a096;
   --color-page: #f8faf7;
   --color-surface: #ffffff;
   --color-surface-soft: #f8fbf8;
@@ -71,7 +71,6 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; background: var(--color-page); }
-.app-loading { display: grid; min-height: 100vh; place-items: center; color: var(--color-muted); font-size: 14px; }
 button, input, select, summary { font: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible {
   outline: 0;
