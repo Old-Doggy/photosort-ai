@@ -1,146 +1,87 @@
-# PhotoSort AI
+# PhotoSort AI · 照片自动分类
 
 <p align="center">
-  <strong>Local AI photo classification, with you in control</strong><br />
-  Sort the first pass locally. Keep the final say.
+  <strong>给喜欢拍照的人做的本地照片整理工具</strong><br />
+  先把重复整理交给 PhotoSort，最后怎么留由自己决定
 </p>
 
 <p align="center">
-  <a href="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml/badge.svg" alt="Build status" /></a>
-  <img src="https://img.shields.io/badge/platform-Windows-f59e0b" alt="Windows" />
-  <img src="https://img.shields.io/badge/license-MIT-7c3aed" alt="MIT license" />
+  <a href="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml"><img src="https://github.com/Old-Doggy/photosort-ai/actions/workflows/validate.yml/badge.svg" alt="构建状态" /></a>
+  <img src="https://img.shields.io/badge/平台-Windows-f59e0b" alt="Windows" />
+  <img src="https://img.shields.io/badge/许可证-MIT-7c3aed" alt="MIT 许可证" />
 </p>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文说明</a> ·
-  <a href="docs/getting-started.md">Getting started</a> ·
-  <a href="docs/troubleshooting.md">Troubleshooting</a> ·
-  <a href="docs/technical-overview.md">Technical notes</a>
+  <a href="README.en.md">English</a> ·
+  <a href="docs/getting-started.zh-CN.md">安装与使用</a> ·
+  <a href="docs/troubleshooting.zh-CN.md">常见问题</a> ·
+  <a href="docs/technical-overview.md">技术说明</a>
 </p>
 
 <p align="center">
-  <img src="src/assets/photosort-cover.svg" alt="PhotoSort AI local photo sorting page" width="900" />
+  <img src="src/assets/photosort-cover.svg" alt="PhotoSort AI 本地照片分类工具示意图" width="900" />
 </p>
 
-## Why I made it
+## 为什么做这个
 
-I enjoy taking photos, but sorting them afterwards is the part I keep putting off. After a trip or a photo walk, a few hundred images can sit in one folder for weeks. The first useful step is often simple: separate people, scenery, animals, plants, and the shots that need a closer look.
+我平时喜欢拍照，也一直觉得整理照片是摄影里最容易被拖延的一环。旅行或拍摄回来，几百张照片常常会混在同一个文件夹里；真正耗时间的，往往是先把人物、风景、动物、植物和需要仔细确认的照片分出来。
 
-PhotoSort is my attempt to make that first pass less tedious. It runs locally, puts the results into copies, and leaves room for me to inspect the photos and correct the labels. I once tried to make it decide which images were “the best,” but that quickly became too dependent on the purpose of a shoot, the memory behind a frame, and personal taste. The current project treats recommendations as a shortlist, while the final choice stays with the photographer.
+PhotoSort 是我想把这一步做得轻松一些的尝试。它在本地读取照片，把结果写入单独的副本文件夹，再留出预览和人工修正的空间。我也曾经想让它直接挑出“最好看”的照片，但很快发现，照片好不好取决于拍摄目的、当时的记忆和个人偏好，很难交给一个分数决定。所以现在的重点是分类清楚、结果可检查；辅助推荐只用来缩小浏览范围，最后留下哪些照片，还是由拍照片的人决定。
 
-PhotoSort works on copies in an output folder. The original folder is left alone, so it is safe to review the result before doing anything else with the photos.
+## 隐私与本地处理
 
-## Privacy first
+照片只从你选择的本地文件夹读取，不会发送到云端图片 API。基础分类不依赖 Ollama；如果需要自然语言图片解释，可以让 Ollama 在同一台电脑上运行本地视觉模型。
 
-Photos are read from local folders and are not sent to a cloud image API. Basic classification works without Ollama. The optional natural-language explanation uses a vision model running through Ollama on the same computer.
+这个公开仓库只放源代码、文档和安装项目所需的少量资源，不包含：
 
-This public repository contains source code, documentation, and the small resources required to install the project. It does not contain:
+- 个人照片和截图
+- 个人绝对路径或本机运行报告
+- 生成结果和运行缓存
+- 模型权重、API 密钥和访问令牌
 
-- personal photos or screenshots
-- personal absolute paths or machine-specific reports
-- generated outputs or runtime caches
-- model weights, API keys, or access tokens
+## 现在能做什么
 
-## What it does
+- 按 `单人`、`多人`、`人物与风景`、`风景`、`动物`、`植物`、`其他`、`待确认` 分类
+- 在网页里选文件夹、看进度、打开大图、修改分类和删除分类副本
+- 大图支持上一张、下一张、键盘方向键和触屏滑动，按当前分类或收藏列表跨页浏览
+- 分类只生成副本，不移动、不改名、不删除来源原图
+- 一批处理完自动停止；新增照片后，再点一次“一键筛选”
+- 点击“刷新当前文件夹”重新核对磁盘文件，移除失效的结果卡片
+- 可选用本地视觉模型补充图片解释，不把照片发到云端 API
 
-- Scans the selected folder and classifies photos into `Single person`, `Multiple people`, `People + scenery`, `Scenery`, `Animals`, `Plants`, `Other`, or `Needs review`
-- Shows progress while one batch is running, then stops by itself
-- Opens thumbnails and larger previews in the browser
-- Browses larger previews with previous/next buttons, arrow keys, or touch swipes, across pages within the active category or favorites
-- Lets you move an output copy to another category or delete that output copy
-- Reads the current disk state again when you click **Refresh current folder**
-- Offers **Assisted recommendations** as a technical shortcut for review; it does not claim to know your taste
-- Can use an optional local vision model to write a short image explanation
+## 先跑起来
 
-Basic classification works without Ollama. Photos stay on the computer and are not sent to a cloud image API.
+目前主要支持 Windows。先安装 [Node.js 22.12 或更新版本](https://nodejs.org/)，下载仓库 ZIP 并解压，或使用 Git 克隆。
 
-## Quick start on Windows
+1. 双击 `首次安装.cmd`，等依赖、基础模型下载和网页构建完成；最后询问是否安装视觉模型，想先试用就选 `N`
+2. 双击 `启动网页控制.cmd`，保留启动窗口；网页没自动打开时，打开窗口中显示的地址，默认是 `http://127.0.0.1:4317`
+3. 选择照片来源和一个独立的结果文件夹，点击 **一键筛选**，等待 **分类完成，已自动停止**
 
-### 1. Install the project
+不要直接打开 `index.html`，文件夹访问需要本地服务。首次安装需要联网下载资源，日常照片分析在本机进行，不需要开机启动。
 
-Install [Node.js 22.12 or newer](https://nodejs.org/), download or clone this repository, then double-click `首次安装.cmd`.
+完整操作、退出方式和更新方法见 [安装与使用](docs/getting-started.zh-CN.md)，遇到问题先看 [常见问题](docs/troubleshooting.zh-CN.md)。
 
-The first-time setup script will:
+## 要不要装大模型
 
-1. Install the locked npm dependencies
-2. Install the local Chromium runtime
-3. Download and verify the small base model assets
-4. Build the web page and run the environment check
+基础分类不需要 Ollama。想要本地看图解释和视觉复核，可以双击 `安装本地视觉模型.cmd`，按向导安装 Ollama 并下载默认的 `Qwen 3.5 4B`。
 
-The script asks whether you want to install the optional vision model. Choose `N` if you only want basic classification.
-
-### 2. Start the browser page
-
-Double-click `启动网页控制.cmd`. Keep the black command window open while using PhotoSort. It opens the local page automatically; if it does not, open the `http://127.0.0.1:4317` address printed in that window.
-
-Do not double-click `index.html`. The browser page needs the local control service for folder access, progress, previews, and corrections.
-
-### 3. Run a batch
-
-1. Choose the photo source folder
-2. Choose a separate output folder
-3. Pick `自动选择` (`Auto`) or a detected CPU, GPU, or NPU device
-4. Click `一键筛选` (`Start sorting`)
-5. Wait for `分类完成，已自动停止` (`Sorting complete`)
-
-The batch processes the files that are present when it starts. It does not keep watching the folder after completion. Put new photos in the folder and click **一键筛选** again when you want another batch.
-
-### 4. Review the result
-
-Use the category buttons to browse. Open `查看详情` (`View details`) to see the photo, the plain-language explanation, and the optional technical details. If a label is wrong, use `修改分类` (`Change category`). The change moves only the output copy; the source photo stays where it is.
-
-## Optional image explanations
-
-The classifier and the natural-language explanation are separate pieces.
-
-To add the explanation feature, double-click `安装本地视觉模型.cmd` (`Install local vision model`). It installs the official Ollama application when needed and prepares `qwen3.5:4b` by default. The model is several gigabytes, so it is downloaded on the first install and is not stored in this repository.
-
-You can also choose another supported model from the page after installing it:
-
-| Model | Use it when |
+| 选项 | 我的使用建议 |
 | --- | --- |
-| Basic analysis | You want the smallest setup and fastest classification |
-| Qwen 3.5 4B | You want the recommended daily balance |
-| Gemma 3 4B | You want the compatibility baseline |
-| Qwen 3.5 9B | You have more memory and VRAM and want to try the larger model |
+| 基础分析 | 先跑通流程，或电脑资源比较紧张时用 |
+| Qwen 3.5 4B | 日常优先尝试，兼顾效果与资源占用 |
+| Gemma 3 4B | 另一个可选方案，可以结合自己的照片比较 |
+| Qwen 3.5 9B | 资源充足时再试，更大不保证每张照片都更准 |
 
-The page shows whether a model is installed and gives a resource suggestion. A forced model choice is available, but it does not download a missing model and may run out of memory.
+网页会显示安装情况和资源建议。基础分类设备与 Ollama 模型设备分开显示；选中了 NPU 也不代表已经用上，实际运行证据会在处理后给出。
 
-## Hardware notes
+## 还有哪些不足
 
-The page detects the devices available on the current Windows computer. A device being listed does not by itself prove that a photo used it. The page only says that NPU execution was verified when the result contains the required runtime evidence.
+口罩、遮挡、雕像、远处的小人、模糊和复杂场景仍可能分错，需要人工确认。辅助推荐也只是帮忙缩小浏览范围，不是审美结论。欢迎通过 Issue 提供复现步骤，分享前记得去掉个人照片和路径。
 
-The optional Ollama model has its own device status. It should not be confused with the device used by the basic classifier.
+## 其他文档
 
-## If something goes wrong
+- [技术说明](docs/technical-overview.md)：结构、模型和硬件路径
+- [模型资源](public/models/README.md) · [模型来源与许可](docs/model-sources.md)
+- [参与开发](CONTRIBUTING.md) · [安全与隐私](SECURITY.md)
 
-- `首次安装.cmd` stops: run `运行体检.cmd` and read the first failed check
-- The browser does not open: keep the launcher window open and manually open `http://127.0.0.1:4317`
-- The page says the service is unavailable: run `启动网页控制.cmd` from the project folder, not from a shortcut to another directory
-- Natural-language explanations are unavailable: basic classification still works; install Ollama and the optional model if you need them
-- Chinese paths look wrong: stop the current batch, click **选择文件夹** again, then refresh the page
-- A model is missing: use `安装本地视觉模型.cmd` or follow [`docs/troubleshooting.md`](docs/troubleshooting.md)
-
-## Development
-
-```powershell
-npm ci
-npm run doctor
-npm run test:all
-npm run build
-npm run lint
-```
-
-The main page is `FolderControl`. The local service is in `tools/control-server.js`. Generated outputs, model weights, caches, test fixtures, and personal paths are ignored by Git.
-
-More detail is available in [`docs/technical-overview.md`](docs/technical-overview.md), [`public/models/README.md`](public/models/README.md), and [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Limits
-
-This is a practical local tool, not a promise that every difficult photo will be labelled correctly. Small faces, masks, statues, animals in unusual poses, rotated images, blur, and mixed scenes can still need human review. That is why `Needs review`, previews, correction, and source-file protection are part of the normal workflow.
-
-Third-party models and dependencies may have their own licences. See [`docs/model-sources.md`](docs/model-sources.md).
-
-## License
-
-The application source is released under the MIT License. See [`LICENSE`](LICENSE).
+源代码使用 [MIT License](LICENSE)，第三方模型按各自许可使用

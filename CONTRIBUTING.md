@@ -4,7 +4,7 @@ Thanks for helping improve PhotoSort AI.
 
 ## Before you start
 
-- Read the English or [Chinese README](README.zh-CN.md).
+- Read the [Chinese README](README.md) or [English README](README.en.md).
 - Open an issue first for large behavior changes or new model integrations.
 - Keep pull requests focused and easy to review.
 
